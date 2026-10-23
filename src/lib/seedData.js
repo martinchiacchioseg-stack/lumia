@@ -1,0 +1,391 @@
+// Datos semilla realistas para Patita Aliada (utilizados como estado inicial y fallback)
+
+export const INITIAL_USERS = [
+  {
+    id: 'usr-superadmin',
+    nombre: 'Martín Chiacchio',
+    email: 'martinchiacchio.seg@gmail.com',
+    telefono: '+5491122334455',
+    rol: 'Superadministrador',
+    rol_id: 'rol-superadmin',
+    activo: true,
+    must_change_password: true,
+    created_at: '2026-10-01T10:00:00.000Z',
+    ultimo_ingreso: null
+  },
+  {
+    id: 'usr-admin',
+    nombre: 'Génesis Bustamante',
+    email: 'genesisbustamante88@gmail.com',
+    telefono: '+5491199887766',
+    rol: 'Administrador',
+    rol_id: 'rol-admin',
+    activo: true,
+    must_change_password: true,
+    created_at: '2026-10-01T10:30:00.000Z',
+    ultimo_ingreso: null
+  },
+  {
+    id: 'usr-rescatista-flor',
+    nombre: 'Florencia Romero',
+    email: 'flor.rescatista@gmail.com',
+    telefono: '+5491133221100',
+    rol: 'Rescatista',
+    rol_id: 'rol-rescatista',
+    activo: true,
+    must_change_password: false,
+    created_at: '2026-10-05T12:00:00.000Z',
+    ultimo_ingreso: '2026-10-21T18:00:00.000Z'
+  }
+];
+
+export const INITIAL_ANIMALS = [
+  {
+    id: 'anim-luna',
+    codigo_interno: 'DOG-001',
+    nombre_actual: 'Luna',
+    nombre_anterior_apodo: 'Lunita',
+    especie: 'perro',
+    sexo: 'hembra',
+    edad_estimada: 'joven',
+    fecha_nacimiento_aproximada: '2024-03-10',
+    tamano: 'mediano',
+    pelaje_color_senas_particulares: 'Manto negro brillante con manchas blancas en el pecho y patitas delanteras. Orejas semierguidas.',
+    estado_caso: 'adoptado',
+    fecha_rescate: '2026-08-20',
+    ubicacion_rescate: 'Parque Avellaneda, CABA',
+    latitud: -34.6465,
+    longitud: -58.4784,
+    rescatista_a_cargo: 'usr-admin',
+    transito_previo: {
+      nombre: 'Hogar de Tránsito Belgrano (Mariana)',
+      direccion: 'Juramento 2100, CABA',
+      telefono: '+5491144445555'
+    },
+    foto_portada: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
+    galeria: [
+      {
+        id: 'g1',
+        url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
+        categoria: 'rescate',
+        fecha: '2026-08-20',
+        notas: 'Día del rescate en el parque, estaba desnutrida y con sed'
+      },
+      {
+        id: 'g2',
+        url: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&w=800&q=80',
+        categoria: 'evolucion',
+        fecha: '2026-09-10',
+        notas: 'Recuperando peso y jugando en el patio de tránsito'
+      },
+      {
+        id: 'g3',
+        url: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=80',
+        categoria: 'familia_adoptiva',
+        fecha: '2026-10-01',
+        notas: 'Primer día en su nuevo hogar con Carla'
+      }
+    ],
+    relacion_con_perros: 'Muy sociable, juega con machos y hembras sin problemas',
+    relacion_con_gatos: 'Curiosa pero respetuosa, convive sin perseguirlos',
+    relacion_con_personas: 'Súper dulce con niños, un poco asustadiza con ruidos fuertes o escobas',
+    nivel_energia: 'moderado',
+    manejo_correa_paseos: 'Camina muy bien con pretal antitirones',
+    notas_conducta: 'Le tiene miedo a las tormentas y la pirotecnia; responde excelente al refuerzo positivo con premios ricos.',
+    alimentacion_recomendada: 'Alimento balanceado premium adultos medianos (VitalCan Balance) 280g diarios repartidos en 2 tomas.',
+    archivado: false,
+    created_at: '2026-08-20T14:00:00.000Z'
+  },
+  {
+    id: 'anim-milo',
+    codigo_interno: 'CAT-001',
+    nombre_actual: 'Milo',
+    nombre_anterior_apodo: 'Amarillito',
+    especie: 'gato',
+    sexo: 'macho',
+    edad_estimada: 'cachorro 2-6 meses',
+    fecha_nacimiento_aproximada: '2026-06-01',
+    tamano: 'chico',
+    pelaje_color_senas_particulares: 'Atigrado naranja y blanco (red tabby), ojos ámbar, punta de la cola blanca.',
+    estado_caso: 'en adopción',
+    fecha_rescate: '2026-09-28',
+    ubicacion_rescate: 'Plaza Flores, CABA',
+    latitud: -34.6288,
+    longitud: -58.4638,
+    rescatista_a_cargo: 'usr-admin',
+    transito_previo: {
+      nombre: 'Tránsito de Gatitos Flores',
+      direccion: 'Rivadavia y Artigas',
+      telefono: '+5491133334444'
+    },
+    foto_portada: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80',
+    galeria: [
+      {
+        id: 'g4',
+        url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80',
+        categoria: 'rescate',
+        fecha: '2026-09-28',
+        notas: 'Encontrado en un cantero de la plaza resguardándose de la lluvia'
+      }
+    ],
+    relacion_con_perros: 'No testeado con perros',
+    relacion_con_gatos: 'Excelente con otros gatitos, es muy mimoso y duerme acurrucado',
+    relacion_con_personas: 'Ronronero compulsivo, le encanta dormir en el pecho de las personas',
+    nivel_energia: 'muy activo',
+    manejo_correa_paseos: 'No aplica',
+    notas_conducta: 'Súper juguetón, le encantan las cañitas con plumas. Requisito de adopción: departamento con red de protección en todas las ventanas.',
+    alimentacion_recomendada: 'Purina Pro Plan Kitten húmedo y seco libre demanda.',
+    archivado: false,
+    created_at: '2026-09-28T16:30:00.000Z'
+  },
+  {
+    id: 'anim-simba',
+    codigo_interno: 'DOG-002',
+    nombre_actual: 'Simba',
+    nombre_anterior_apodo: 'Barba',
+    especie: 'perro',
+    sexo: 'macho',
+    edad_estimada: 'adulto',
+    fecha_nacimiento_aproximada: '2022-05-15',
+    tamano: 'grande',
+    pelaje_color_senas_particulares: 'Mestizo tipo ovejero leonado, hocico oscuro, cicatriz en oreja izquierda.',
+    estado_caso: 'en tránsito',
+    fecha_rescate: '2026-10-10',
+    ubicacion_rescate: 'Lomas de Zamora, GBA Sur',
+    latitud: -34.7600,
+    longitud: -58.4000,
+    rescatista_a_cargo: 'usr-rescatista-flor',
+    transito_previo: {
+      nombre: 'Pensión Canina Lomas',
+      direccion: 'Alsina 1200',
+      telefono: '+5491177778888'
+    },
+    foto_portada: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80',
+    galeria: [],
+    relacion_con_perros: 'Tranquilo si no lo prepotean, prefiere convivir con hembras',
+    relacion_con_gatos: 'Tiende a perseguirlos, se recomienda hogar sin gatos',
+    relacion_con_personas: 'Noble y protector, muy agradecido, adora que le rasquen el lomo',
+    nivel_energia: 'tranquilo',
+    manejo_correa_paseos: 'Va al trote con fuerza, necesita collar fijo y correa reforzada',
+    notas_conducta: 'Fue rescatado de la calle con herida de mordedura en cicatrización y anemia leve. Muy dócil con veterinarios.',
+    alimentacion_recomendada: 'Alimento premium de alta digestibilidad más suplemento vitamínico diario.',
+    archivado: false,
+    created_at: '2026-10-10T11:00:00.000Z'
+  }
+];
+
+export const INITIAL_ADOPTERS = [
+  {
+    id: 'adop-carla',
+    nombre_apellido: 'Carla Daniela Rossi',
+    dni_cuit: '35442119',
+    telefono_whatsapp: '+5491155443322',
+    telefono_secundario: '+5491144009988',
+    direccion_calle: 'Av. San Juan',
+    direccion_numero: '3240',
+    direccion_entrecalles: 'Entre Boedo y Colombres',
+    direccion_piso_depto: '4to B',
+    direccion_barrio: 'Boedo',
+    direccion_localidad: 'CABA',
+    direccion_provincia: 'Buenos Aires',
+    tipo_vivienda: 'departamento',
+    condicion_vivienda: 'propietario',
+    redes_sociales: {
+      instagram: '@carlarossi_art',
+      facebook: 'Carla Rossi'
+    },
+    foto_dni_frente: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80',
+    foto_dni_dorso: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=600&q=80',
+    consentimiento_datos: true,
+    archivado: false,
+    created_at: '2026-09-25T15:00:00.000Z'
+  },
+  {
+    id: 'adop-pablo',
+    nombre_apellido: 'Pablo Esteban Gómez',
+    dni_cuit: '31889452',
+    telefono_whatsapp: '+5491166778899',
+    telefono_secundario: '',
+    direccion_calle: 'Mariano Fragueiro',
+    direccion_numero: '1850',
+    direccion_entrecalles: 'Cervantes y Castelar',
+    direccion_piso_depto: '',
+    direccion_barrio: 'Alta Córdoba',
+    direccion_localidad: 'Córdoba Capital',
+    direccion_provincia: 'Córdoba',
+    tipo_vivienda: 'casa con patio cerrado',
+    condicion_vivienda: 'propietario',
+    redes_sociales: {
+      instagram: '@pablito_gomez'
+    },
+    foto_dni_frente: '',
+    foto_dni_dorso: '',
+    consentimiento_datos: true,
+    archivado: false,
+    created_at: '2026-10-15T18:00:00.000Z'
+  }
+];
+
+export const INITIAL_ADOPTIONS = [
+  {
+    id: 'adopcion-luna',
+    animal_id: 'anim-luna',
+    adoptante_id: 'adop-carla',
+    fecha_entrega: '2026-10-01',
+    modalidad_entrega: 'llevado al domicilio',
+    periodo_adaptacion_dias: 21,
+    compromiso_castracion: true,
+    fecha_limite_castracion: '2026-10-31',
+    estado_adopcion: 'activo en seguimiento',
+    observaciones: 'Luna se adaptó de manera espectacular. Carla trabaja remoto así que no pasa mucho tiempo sola.',
+    contrato_firmado: 'https://example.com/contrato-luna.pdf',
+    archivado: false,
+    created_at: '2026-10-01T16:00:00.000Z'
+  }
+];
+
+export const INITIAL_FOLLOWUPS = [
+  {
+    id: 'seg-1',
+    adopcion_id: 'adopcion-luna',
+    fecha_contacto: '2026-10-04',
+    tipo_contacto: 'WhatsApp',
+    foto_video_recibido: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=80',
+    estado_general: 'excelente',
+    observaciones: 'Control inicial 72 hs: Carla nos mandó fotos durmiendo en su camita nueva. Come con apetito y hace sus necesidades en los paseos.',
+    proxima_fecha_seguimiento: '2026-10-16',
+    completado: true,
+    created_at: '2026-10-04T19:00:00.000Z'
+  },
+  {
+    id: 'seg-2',
+    adopcion_id: 'adopcion-luna',
+    fecha_contacto: '2026-10-16',
+    tipo_contacto: 'WhatsApp',
+    foto_video_recibido: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
+    estado_general: 'excelente',
+    observaciones: 'Control a los 15 días: excelente relación, ya pasea tranquila y conoce los horarios. Se le recordó el turno de castración para fin de mes.',
+    proxima_fecha_seguimiento: '2026-10-25',
+    completado: true,
+    created_at: '2026-10-16T17:30:00.000Z'
+  },
+  {
+    id: 'seg-3',
+    adopcion_id: 'adopcion-luna',
+    fecha_contacto: '2026-10-25',
+    tipo_contacto: 'WhatsApp',
+    foto_video_recibido: '',
+    estado_general: 'alerta',
+    observaciones: 'Control programado a los 30 días: verificar castración y recibir fotos actuales.',
+    proxima_fecha_seguimiento: '2026-11-01',
+    completado: false,
+    created_at: '2026-10-01T16:05:00.000Z'
+  }
+];
+
+export const INITIAL_HEALTH_EVENTS = [
+  {
+    id: 'salud-1',
+    animal_id: 'anim-luna',
+    fecha: '2026-08-25',
+    tipo_evento: 'vacuna antirrábica',
+    producto_o_detalle: 'Rabisin (Boehringer Ingelheim)',
+    profesional_veterinaria: 'Dra. Silvina Romero - MP 4590',
+    lugar: 'Veterinaria El Ombú',
+    diagnostico_enfermedad: '',
+    medicacion_cronica: false,
+    fecha_proximo_refuerzo_o_vencimiento: '2027-08-25',
+    created_at: '2026-08-25T11:00:00.000Z'
+  },
+  {
+    id: 'salud-2',
+    animal_id: 'anim-luna',
+    fecha: '2026-09-05',
+    tipo_evento: 'múltiple/séxtuple/triple felina',
+    producto_o_detalle: 'Nobivac DHPPi + L (Séxtuple canina)',
+    profesional_veterinaria: 'Dra. Silvina Romero',
+    lugar: 'Veterinaria El Ombú',
+    diagnostico_enfermedad: '',
+    medicacion_cronica: false,
+    fecha_proximo_refuerzo_o_vencimiento: '2027-09-05',
+    created_at: '2026-09-05T10:00:00.000Z'
+  },
+  {
+    id: 'salud-3',
+    animal_id: 'anim-simba',
+    fecha: '2026-10-12',
+    tipo_evento: 'tratamiento',
+    producto_o_detalle: 'Cefalexina 500mg cada 12hs por 10 días + desinfección con Clorhexidina',
+    profesional_veterinaria: 'Dr. Alejandro Ruiz',
+    lugar: 'Hospital Veterinario Municipal Lomas',
+    diagnostico_enfermedad: 'Herida desgarrada en pata delantera izquierda por mordedura callejera',
+    medicacion_cronica: true,
+    detalle_medicacion_cronica: 'Antibiótico diario hasta el 22/10',
+    fecha_proximo_refuerzo_o_vencimiento: '2026-10-24', // Próximo a vencer / control
+    created_at: '2026-10-12T16:00:00.000Z'
+  }
+];
+
+export const INITIAL_STREET_REPORTS = [
+  {
+    id: 'rep-1',
+    descripcion: 'Perrita mestiza atropellada en la mano hacia provincia. Está sobre la vereda resguardada por vecinos con una manta pero renguea mucho y necesita atención urgente.',
+    latitud: -34.6180,
+    longitud: -58.4200,
+    direccion_aproximada: 'Av. Rivadavia 4300, Almagro, CABA',
+    nivel_urgencia: 'crítico',
+    estado_reporte: 'nuevo',
+    fotos: [
+      'https://images.unsplash.com/photo-1588943211346-0908a1fb0b01?auto=format&fit=crop&w=800&q=80'
+    ],
+    reportante_id: 'usr-rescatista-flor',
+    rescatista_asignada: null,
+    fecha_resolucion: null,
+    animal_id: null,
+    created_at: '2026-10-22T20:15:00.000Z'
+  },
+  {
+    id: 'rep-2',
+    descripcion: 'Gata mamá con 4 gatitos recién nacidos en una caja de cartón al lado de un contenedor de basura.',
+    latitud: -34.6037,
+    longitud: -58.3816,
+    direccion_aproximada: 'Talcahuano 450, San Nicolás, CABA',
+    nivel_urgencia: 'alto',
+    estado_reporte: 'tomado',
+    fotos: [
+      'https://images.unsplash.com/photo-1548802673-380ab8ebc7b7?auto=format&fit=crop&w=800&q=80'
+    ],
+    reportante_id: 'usr-admin',
+    rescatista_asignada: 'usr-admin',
+    fecha_resolucion: null,
+    animal_id: null,
+    created_at: '2026-10-22T14:00:00.000Z'
+  }
+];
+
+export const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'aud-1',
+    usuario_nombre: 'Génesis Bustamante',
+    accion: 'Creación de adopción',
+    tabla_afectada: 'adopciones',
+    registro_nombre: 'Luna (DOG-001) a Carla Rossi',
+    fecha: '2026-10-01T16:00:00.000Z'
+  },
+  {
+    id: 'aud-2',
+    usuario_nombre: 'Florencia Romero',
+    accion: 'Registro de rescate',
+    tabla_afectada: 'animales',
+    registro_nombre: 'Simba (DOG-002)',
+    fecha: '2026-10-10T11:00:00.000Z'
+  },
+  {
+    id: 'aud-3',
+    usuario_nombre: 'Génesis Bustamante',
+    accion: 'Carga de seguimiento',
+    tabla_afectada: 'seguimientos',
+    registro_nombre: 'Control 15 días - Luna',
+    fecha: '2026-10-16T17:30:00.000Z'
+  }
+];

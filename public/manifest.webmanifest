@@ -1,0 +1,18 @@
+{
+  "name": "Patita Aliada",
+  "short_name": "Patita Aliada",
+  "description": "Sistema de gestión integral para rescatistas de animales en Argentina",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fef7ee",
+  "theme_color": "#ea731b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
