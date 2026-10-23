@@ -3,7 +3,9 @@ import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
-import { formatDate, formatDateTime, isOverdue, getWhatsappLink, getWhatsappTemplate } from '../../lib/formatters';
+import { Logo } from '../common/Logo';
+import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate } from '../../lib/formatters';
+import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService';
 import { 
   Dog, 
   Cat, 
@@ -16,11 +18,12 @@ import {
   ClipboardCheck, 
   Printer, 
   Plus, 
-  Trash2, 
+  Download, 
   Edit3, 
-  AlertCircle,
   FileText,
-  UserCheck
+  UserCheck,
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
@@ -36,6 +39,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
   const { hasPermission } = usePermissions();
 
   const [activeTab, setActiveTab] = useState('datos');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Estado para nuevo evento de salud
   const [showAddHealth, setShowAddHealth] = useState(false);
@@ -76,6 +80,27 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
   const adoption = adopciones.find(a => a.animal_id === animal.id && !a.archivado);
   const adopter = adoption ? adoptantes.find(ad => ad.id === adoption.adoptante_id) : null;
   const animalFollowups = adoption ? seguimientos.filter(s => s.adopcion_id === adoption.id) : [];
+
+  // Descarga del PDF Oficial LUMIA
+  const handleDownloadOfficialPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      await downloadLibretaPdf({
+        mascota: animal,
+        adoptante: adopter,
+        adopcion: adoption,
+        historial: animalHealthEvents,
+        options: {
+          organizationName: 'Red de Rescatistas Independientes - LUMIA',
+          includeActa: true
+        }
+      });
+    } catch (error) {
+      alert('Error al generar el PDF oficial. Por favor intente nuevamente.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   // Guardar evento de salud
   const handleSaveHealth = (e) => {
@@ -140,11 +165,6 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
     setPhotoForm({ url: '', categoria: 'evolucion', notas: '' });
   };
 
-  // Imprimir ficha médica / libreta sanitaria
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -153,53 +173,32 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
       subtitle={`${animal.especie === 'perro' ? 'Perro' : 'Gato'} • ${animal.sexo} • ${animal.edad_estimada} • ${animal.tamano}`}
       maxWidth="max-w-4xl"
     >
-      {/* Contenedor imprimible especial para libreta sanitaria */}
-      <div id="printable-libreta" className="hidden print:block p-8 font-sans">
-        <div className="border-4 border-patita-600 rounded-3xl p-6">
-          <div className="flex justify-between items-center border-b-2 border-stone-300 pb-4 mb-4">
-            <div>
-              <h1 className="text-3xl font-extrabold text-patita-700">PATITA ALIADA</h1>
-              <p className="text-sm font-bold text-stone-600">LIBRETA SANITARIA Y FICHA VETERINARIA DIGITAL</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold text-stone-800">{animal.codigo_interno}</p>
-              <p className="text-xs text-stone-500">Emisión: {new Date().toLocaleDateString('es-AR')}</p>
-            </div>
+      {/* Barra de Descarga Oficial LUMIA */}
+      <div className="mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-lumia-500 to-lumia-600 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md shadow-lumia-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+            <Logo variant="icon-only" size="sm" className="brightness-0 invert" />
           </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-            <div><strong>Nombre:</strong> {animal.nombre_actual}</div>
-            <div><strong>Especie y Sexo:</strong> {animal.especie} - {animal.sexo}</div>
-            <div><strong>Edad Estimada:</strong> {animal.edad_estimada}</div>
-            <div><strong>Tamaño:</strong> {animal.tamano}</div>
-            <div className="col-span-2"><strong>Pelaje y Señas:</strong> {animal.pelaje_color_senas_particulares || 'Sin señas particulares'}</div>
-            <div className="col-span-2"><strong>Alimentación Sugerida:</strong> {animal.alimentacion_recomendada}</div>
+          <div>
+            <h4 className="font-extrabold text-sm tracking-tight">LIBRETA ÚNICA LUMIA IMPRIMIBLE</h4>
+            <p className="text-xs text-lumia-100">
+              Documento oficial de adopción y libreta sanitaria digital con membrete transparente
+            </p>
           </div>
-
-          <h2 className="text-lg font-bold border-b border-stone-300 pb-2 mb-3">HISTORIAL DE VACUNACIÓN Y SALUD</h2>
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b-2 border-stone-400">
-                <th className="py-2">Fecha</th>
-                <th>Tipo de Evento</th>
-                <th>Producto / Detalle</th>
-                <th>Profesional / Clínica</th>
-                <th>Próximo Refuerzo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {animalHealthEvents.map(h => (
-                <tr key={h.id} className="border-b border-stone-200">
-                  <td className="py-2">{formatDate(h.fecha)}</td>
-                  <td className="font-semibold">{h.tipo_evento}</td>
-                  <td>{h.producto_o_detalle}</td>
-                  <td>{h.profesional_veterinaria || '-'}</td>
-                  <td>{formatDate(h.fecha_proximo_refuerzo_o_vencimiento)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
+
+        <button
+          onClick={handleDownloadOfficialPdf}
+          disabled={isGeneratingPdf}
+          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-lumia-700 font-extrabold text-xs hover:bg-lumia-50 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+        >
+          {isGeneratingPdf ? (
+            <div className="w-4 h-4 border-2 border-lumia-600 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <Download className="w-4 h-4 text-lumia-600" />
+          )}
+          <span>{isGeneratingPdf ? 'Generando PDF...' : 'Descargar Libreta Oficial (PDF)'}</span>
+        </button>
       </div>
 
       {/* Tabs Principales de la Ficha */}
@@ -207,7 +206,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
         <button
           onClick={() => setActiveTab('datos')}
           className={`pb-3 px-3.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-            activeTab === 'datos' ? 'border-patita-500 text-patita-700' : 'border-transparent text-stone-500 hover:text-stone-800'
+            activeTab === 'datos' ? 'border-lumia-500 text-lumia-700' : 'border-transparent text-stone-500 hover:text-stone-800'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -217,7 +216,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
         <button
           onClick={() => setActiveTab('salud')}
           className={`pb-3 px-3.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-            activeTab === 'salud' ? 'border-patita-500 text-patita-700' : 'border-transparent text-stone-500 hover:text-stone-800'
+            activeTab === 'salud' ? 'border-lumia-500 text-lumia-700' : 'border-transparent text-stone-500 hover:text-stone-800'
           }`}
         >
           <Stethoscope className="w-4 h-4" />
@@ -227,7 +226,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
         <button
           onClick={() => setActiveTab('conducta')}
           className={`pb-3 px-3.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-            activeTab === 'conducta' ? 'border-patita-500 text-patita-700' : 'border-transparent text-stone-500 hover:text-stone-800'
+            activeTab === 'conducta' ? 'border-lumia-500 text-lumia-700' : 'border-transparent text-stone-500 hover:text-stone-800'
           }`}
         >
           <Heart className="w-4 h-4" />
@@ -237,7 +236,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
         <button
           onClick={() => setActiveTab('galeria')}
           className={`pb-3 px-3.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-            activeTab === 'galeria' ? 'border-patita-500 text-patita-700' : 'border-transparent text-stone-500 hover:text-stone-800'
+            activeTab === 'galeria' ? 'border-lumia-500 text-lumia-700' : 'border-transparent text-stone-500 hover:text-stone-800'
           }`}
         >
           <ImageIcon className="w-4 h-4" />
@@ -247,7 +246,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
         <button
           onClick={() => setActiveTab('adopcion')}
           className={`pb-3 px-3.5 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-            activeTab === 'adopcion' ? 'border-patita-500 text-patita-700' : 'border-transparent text-stone-500 hover:text-stone-800'
+            activeTab === 'adopcion' ? 'border-lumia-500 text-lumia-700' : 'border-transparent text-stone-500 hover:text-stone-800'
           }`}
         >
           <ClipboardCheck className="w-4 h-4" />
@@ -284,17 +283,10 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrint}
-                    className="p-2 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 border border-stone-200 transition-colors"
-                    title="Imprimir Libreta Sanitaria"
-                  >
-                    <Printer className="w-4 h-4" />
-                  </button>
                   {hasPermission('animales', 'editar') && (
                     <button
                       onClick={() => onEditAnimal && onEditAnimal(animal)}
-                      className="px-3 py-1.5 rounded-xl bg-patita-500 hover:bg-patita-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm shadow-patita-500/20"
+                      className="px-3 py-1.5 rounded-xl bg-lumia-500 hover:bg-lumia-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm shadow-lumia-500/20"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Editar</span>
@@ -305,8 +297,8 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200">
-                  <span className="text-stone-400 font-semibold block mb-0.5">Código Único</span>
-                  <span className="font-extrabold text-patita-600 text-sm">{animal.codigo_interno}</span>
+                  <span className="text-stone-400 font-semibold block mb-0.5">Código LUMIA</span>
+                  <span className="font-extrabold text-lumia-600 text-sm">{animal.codigo_interno}</span>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200">
@@ -317,7 +309,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                 <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200 col-span-2">
                   <span className="text-stone-400 font-semibold block mb-0.5">Lugar del Rescate</span>
                   <span className="font-bold text-stone-800 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-patita-500" />
+                    <MapPin className="w-3.5 h-3.5 text-lumia-500" />
                     {animal.ubicacion_rescate || 'No especificada'}
                   </span>
                 </div>
@@ -338,20 +330,6 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
               </div>
             </div>
           </div>
-
-          {/* Tránsito Previo */}
-          {animal.transito_previo && (animal.transito_previo.nombre || animal.transito_previo.telefono) && (
-            <div className="p-4 rounded-3xl bg-amber-50/70 border border-amber-200/80 space-y-2">
-              <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Dog className="w-4 h-4 text-amber-700" /> Hogar de Tránsito
-              </h4>
-              <div className="text-xs text-amber-800 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div><strong>Responsable:</strong> {animal.transito_previo.nombre || '-'}</div>
-                <div><strong>Teléfono:</strong> {animal.transito_previo.telefono || '-'}</div>
-                <div><strong>Dirección:</strong> {animal.transito_previo.direccion || '-'}</div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -367,7 +345,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             {hasPermission('salud', 'crear') && (
               <button
                 onClick={() => setShowAddHealth(true)}
-                className="px-3.5 py-2 rounded-xl bg-patita-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                className="px-3.5 py-2 rounded-xl bg-lumia-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>Registrar Evento</span>
@@ -377,8 +355,8 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
 
           {/* Formulario para agregar evento de salud */}
           {showAddHealth && (
-            <div className="p-4 rounded-3xl bg-stone-50 border border-patita-300 space-y-3 animate-in fade-in">
-              <h4 className="text-xs font-bold text-patita-800 uppercase tracking-wider">Nuevo Evento Médico</h4>
+            <div className="p-4 rounded-3xl bg-stone-50 border border-lumia-300 space-y-3 animate-in fade-in">
+              <h4 className="text-xs font-bold text-lumia-800 uppercase tracking-wider">Nuevo Evento Médico</h4>
               <form onSubmit={handleSaveHealth} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -458,7 +436,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-xl bg-patita-600 text-white text-xs font-bold shadow-sm"
+                    className="px-4 py-1.5 rounded-xl bg-lumia-500 text-white text-xs font-bold shadow-sm"
                   >
                     Guardar en Libreta
                   </button>
@@ -478,7 +456,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
               {animalHealthEvents.map(event => (
                 <div key={event.id} className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-patita-50 text-patita-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                    <div className="w-9 h-9 rounded-xl bg-lumia-50 text-lumia-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                       💊
                     </div>
                     <div>
@@ -556,11 +534,11 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-            <span className="text-xs font-bold text-amber-900 uppercase tracking-wider block mb-1">
+          <div className="p-4 rounded-2xl bg-lumia-50 border border-lumia-200">
+            <span className="text-xs font-bold text-lumia-900 uppercase tracking-wider block mb-1">
               Notas de Conducta, Miedos y Sensibilidades
             </span>
-            <p className="text-xs text-amber-900 leading-relaxed font-medium">
+            <p className="text-xs text-lumia-900 leading-relaxed font-medium">
               {animal.notas_conducta || 'No presenta fobias ni reactividades registradas.'}
             </p>
           </div>
@@ -579,73 +557,13 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             {hasPermission('animales', 'editar') && (
               <button
                 onClick={() => setShowAddPhoto(true)}
-                className="px-3.5 py-2 rounded-xl bg-patita-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                className="px-3.5 py-2 rounded-xl bg-lumia-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>Agregar Foto</span>
               </button>
             )}
           </div>
-
-          {showAddPhoto && (
-            <div className="p-4 rounded-3xl bg-stone-50 border border-patita-300 space-y-3 animate-in fade-in">
-              <h4 className="text-xs font-bold text-patita-800 uppercase tracking-wider">Nueva Foto a Galería</h4>
-              <form onSubmit={handleAddPhoto} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">URL de la Imagen *</label>
-                    <input
-                      type="text"
-                      required
-                      value={photoForm.url}
-                      onChange={(e) => setPhotoForm({ ...photoForm, url: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Categoría</label>
-                    <select
-                      value={photoForm.categoria}
-                      onChange={(e) => setPhotoForm({ ...photoForm, categoria: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white"
-                    >
-                      <option value="rescate">Día del Rescate</option>
-                      <option value="evolucion">Evolución en Tránsito</option>
-                      <option value="familia_adoptiva">Con la Familia Adoptiva</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Epígrafe / Notas</label>
-                  <input
-                    type="text"
-                    value={photoForm.notas}
-                    onChange={(e) => setPhotoForm({ ...photoForm, notas: e.target.value })}
-                    placeholder="Ej: Jugando en el patio con su juguete favorito..."
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddPhoto(false)}
-                    className="px-3 py-1.5 rounded-xl text-stone-600 hover:bg-stone-200 text-xs font-semibold"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 rounded-xl bg-patita-600 text-white text-xs font-bold shadow-sm"
-                  >
-                    Subir a Galería
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
 
           {(!animal.galeria || animal.galeria.length === 0) ? (
             <div className="p-8 text-center bg-stone-50 rounded-3xl border border-stone-200">
@@ -687,10 +605,10 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
           ) : (
             <>
               {/* Tarjeta del Adoptante */}
-              <div className="p-4 rounded-3xl bg-patita-50/60 border border-patita-200 space-y-3">
+              <div className="p-4 rounded-3xl bg-lumia-50/60 border border-lumia-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-patita-500 text-white font-bold flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-lumia-500 text-white font-bold flex items-center justify-center">
                       <UserCheck className="w-5 h-5" />
                     </div>
                     <div>
@@ -744,108 +662,13 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   {hasPermission('seguimientos', 'crear') && (
                     <button
                       onClick={() => setShowAddSeg(true)}
-                      className="px-3 py-1.5 rounded-xl bg-patita-600 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+                      className="px-3 py-1.5 rounded-xl bg-lumia-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Registrar Contacto</span>
                     </button>
                   )}
                 </div>
-
-                {/* Formulario de Seguimiento */}
-                {showAddSeg && (
-                  <div className="p-4 rounded-3xl bg-stone-50 border border-patita-300 space-y-3 animate-in fade-in">
-                    <h5 className="text-xs font-bold text-patita-800 uppercase tracking-wider">Nuevo Control Posadopción</h5>
-                    <form onSubmit={handleSaveSeg} className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-stone-700 mb-1">Fecha de Contacto</label>
-                          <input
-                            type="date"
-                            value={segForm.fecha_contacto}
-                            onChange={(e) => setSegForm({ ...segForm, fecha_contacto: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-stone-700 mb-1">Vía de Contacto</label>
-                          <select
-                            value={segForm.tipo_contacto}
-                            onChange={(e) => setSegForm({ ...segForm, tipo_contacto: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white"
-                          >
-                            <option value="WhatsApp">WhatsApp</option>
-                            <option value="llamada">Llamada telefónica</option>
-                            <option value="visita presencial">Visita presencial</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-stone-700 mb-1">Semáforo de Estado</label>
-                          <select
-                            value={segForm.estado_general}
-                            onChange={(e) => setSegForm({ ...segForm, estado_general: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white"
-                          >
-                            <option value="excelente">Excelente (Adaptación 10/10) 🟢</option>
-                            <option value="normal">Normal (Dentro de lo esperado) 🔵</option>
-                            <option value="regular">Regular (Requiere ajustes) 🟡</option>
-                            <option value="alerta">ALERTA (Problema / Riesgo) 🔴</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-stone-700 mb-1">Observaciones</label>
-                        <textarea
-                          rows="2"
-                          required
-                          value={segForm.observaciones}
-                          onChange={(e) => setSegForm({ ...segForm, observaciones: e.target.value })}
-                          placeholder="Respuesta de la familia, cómo comió, cómo durmió, etc."
-                          className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-bold text-stone-700 mb-1">Foto o video recibido (URL)</label>
-                          <input
-                            type="text"
-                            value={segForm.foto_video_recibido}
-                            onChange={(e) => setSegForm({ ...segForm, foto_video_recibido: e.target.value })}
-                            placeholder="https://..."
-                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-stone-700 mb-1">Próxima Fecha de Contacto</label>
-                          <input
-                            type="date"
-                            value={segForm.proxima_fecha_seguimiento}
-                            onChange={(e) => setSegForm({ ...segForm, proxima_fecha_seguimiento: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setShowAddSeg(false)}
-                          className="px-3 py-1.5 rounded-xl text-stone-600 hover:bg-stone-200 text-xs font-semibold"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-1.5 rounded-xl bg-patita-600 text-white text-xs font-bold shadow-sm"
-                        >
-                          Guardar Control
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
 
                 {/* Timeline visual */}
                 <div className="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-200">
@@ -855,9 +678,8 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
 
                     return (
                       <div key={seg.id} className="relative">
-                        {/* Dot */}
                         <div className={`absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                          isAlert ? 'bg-rose-500 ring-4 ring-rose-100' : isExcellent ? 'bg-emerald-500' : 'bg-patita-500'
+                          isAlert ? 'bg-rose-500 ring-4 ring-rose-100' : isExcellent ? 'bg-emerald-500' : 'bg-lumia-500'
                         }`} />
 
                         <div className={`p-4 rounded-2xl border ${
