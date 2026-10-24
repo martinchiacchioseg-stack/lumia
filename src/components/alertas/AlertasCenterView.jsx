@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Badge } from '../common/Badge';
-import { formatDate, isOverdue, isDueSoon } from '../../lib/formatters';
+import { formatDate, isOverdue, isDueSoon, getWhatsappLink } from '../../lib/formatters';
 import { 
   Bell, 
   AlertTriangle, 
@@ -253,7 +253,21 @@ export function AlertasCenterView({ onSelectAnimal, setCurrentView }) {
               </div>
             </div>
 
-            <div className="shrink-0 self-end sm:self-center">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {adop.adoptante?.telefono_whatsapp && (
+                <a
+                  href={getWhatsappLink(
+                    adop.adoptante.telefono_whatsapp,
+                    `¡Hola ${adop.adoptante.nombre_apellido.split(' ')[0]}! 🐾 Te escribimos desde la red de rescate para consultarte cómo viene el turno de castración de ${adop.animal?.nombre_actual}. Recordá que teníamos acordado realizar la intervención antes del ${formatDate(adop.fecha_limite_castracion)}. Si necesitás que te recomendemos veterinarias o turnos a bajo costo, ¡avisamos que te ayudamos! Un abrazo grande ❤️`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-sm"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Recordar por WhatsApp</span>
+                </a>
+              )}
               <button
                 onClick={() => setCurrentView('adopciones')}
                 className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-sm"

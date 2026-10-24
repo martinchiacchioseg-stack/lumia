@@ -4,11 +4,12 @@
  * 
  * Color Corporativo Oficial: #C94A2A (Terracota Vívido)
  * Todos los documentos del sistema consumen este servicio para garantizar
- * la identidad visual unificada y el membrete oficial transparente.
+ * la identidad visual unificada, QR dinámico y el membrete oficial transparente.
  */
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
 import { LUMIA_COLORS, LUMIA_LOGO_BASE64 } from '../lib/brandingAssets.js';
 import { formatDate } from '../lib/formatters.js';
 
@@ -44,11 +45,10 @@ const PRIMARY_RGB = hexToRgb(LUMIA_COLORS.primary); // #C94A2A
 export function applyOfficialHeader(doc, { title = 'LIBRETA SANITARIA OFICIAL', subtitle = '', codigo = '' } = {}) {
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Inyección del Logo Oficial Transparente (36mm x 24mm proporcional)
+  // Inyección del Logo Oficial Transparente (38mm x 25mm proporcional)
   try {
     doc.addImage(LUMIA_LOGO_BASE64, 'PNG', PAGE_CONFIG.marginLeft, 8, 38, 25, undefined, 'FAST');
   } catch (err) {
-    // Fallback de texto si el renderizador de imagen tiene un problema
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
@@ -72,7 +72,7 @@ export function applyOfficialHeader(doc, { title = 'LIBRETA SANITARIA OFICIAL', 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(43, 35, 33);
-    doc.text(`REGISTRO: ${codigo}`, pageWidth - PAGE_CONFIG.marginRight, 25, { align: 'right' });
+    doc.text(`REGISTRO NACIONAL: ${codigo}`, pageWidth - PAGE_CONFIG.marginRight, 25, { align: 'right' });
   }
 
   // Línea divisoria decorativa con color corporativo #C94A2A
@@ -93,7 +93,6 @@ export function applyOfficialFooter(doc, pageNumber = 1, totalPages = 1) {
   const pageHeight = doc.internal.pageSize.getHeight();
   const footerY = pageHeight - 10;
 
-  // Línea sutil
   doc.setDrawColor(220, 215, 213);
   doc.setLineWidth(0.3);
   doc.line(PAGE_CONFIG.marginLeft, footerY - 3, pageWidth - PAGE_CONFIG.marginRight, footerY - 3);
@@ -112,6 +111,24 @@ export function applyOfficialFooter(doc, pageNumber = 1, totalPages = 1) {
 }
 
 /**
+ * Genera código QR dinámico en Base64
+ */
+export async function generateQrBase64(text) {
+  try {
+    return await QRCode.toDataURL(text, {
+      margin: 1,
+      width: 256,
+      color: {
+        dark: '#2B2321',
+        light: '#FFFFFF'
+      }
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
  * Validador y normalizador seguro de datos de entrada para la Libreta
  */
 function normalizeLibretaData(data = {}) {
@@ -120,6 +137,8 @@ function normalizeLibretaData(data = {}) {
   const adopcion = data.adopcion || {};
   const historial = Array.isArray(data.historial) ? data.historial : [];
   const options = data.options || {};
+
+  const codigo = mascota.codigo_interno || 'LUM-001';
 
   return {
     mascota: {
@@ -131,8 +150,8 @@ function normalizeLibretaData(data = {}) {
       fecha_nacimiento: mascota.fecha_nacimiento_aproximada || mascota.fecha_nacimiento || '',
       peso: mascota.peso || mascota.tamano || 'Mediano',
       color: mascota.pelaje_color_senas_particulares || mascota.color || 'No especificado',
-      microchip: mascota.microchip || mascota.codigo_interno || 'N/A',
-      codigo_interno: mascota.codigo_interno || 'LUM-001',
+      microchip: mascota.microchip || codigo,
+      codigo_interno: codigo,
       procedencia: mascota.ubicacion_rescate || 'Rescate en vía pública',
       foto_url: mascota.foto_portada || mascota.foto || null,
       alimentacion: mascota.alimentacion_recomendada || 'Alimento balanceado estándar',
@@ -162,7 +181,7 @@ function normalizeLibretaData(data = {}) {
     },
     historial,
     options: {
-      qrCodeUrl: options.qrCodeUrl || `https://lumia.ar/verificar/${mascota.codigo_interno || 'LUM-001'}`,
+      qrCodeUrl: options.qrCodeUrl || `https://lumia.ar/verificar/${codigo}`,
       organizationName: options.organizationName || 'Red Nacional de Rescatistas de Animales',
       organizationStampUrl: options.organizationStampUrl || null,
       includeActa: options.includeActa !== false,
@@ -198,12 +217,7 @@ async function loadImgToBase64(url) {
 
 /**
  * GENERADOR PRINCIPAL: LIBRETA ÚNICA DE MASCOTAS, INFORMES Y ADOPCIONES (LUMIA)
- * 
  * Formato oficial: Documento A4 completo (2 páginas imprimibles a doble faz o plegable)
- * con identidad visual terracota #C94A2A, tabla sanitaria y acta de adopción.
- * 
- * @param {Object} rawData { mascota, adoptante, historial, adopcion, options }
- * @returns {Promise<jsPDF>}
  */
 export async function generateLibreta(rawData) {
   const data = normalizeLibretaData(rawData);
@@ -211,8 +225,11 @@ export async function generateLibreta(rawData) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - PAGE_CONFIG.marginLeft - PAGE_CONFIG.marginRight;
 
-  // Cargar foto de la mascota en segundo plano si existe
-  const petPhotoBase64 = data.mascota.foto_url ? await loadImgToBase64(data.mascota.foto_url) : null;
+  // Cargar foto de la mascota y generar QR dinámico en paralelo
+  const [petPhotoBase64, qrCodeBase64] = await Promise.all([
+    data.mascota.foto_url ? loadImgToBase64(data.mascota.foto_url) : Promise.resolve(null),
+    generateQrBase64(data.options.qrCodeUrl)
+  ]);
 
   // =========================================================================
   // PÁGINA 1: PORTADA Y DATOS FILIATORIOS (MASCOTA + FAMILIA ADOPTANTE)
@@ -242,7 +259,7 @@ export async function generateLibreta(rawData) {
   const photoY = currentY;
 
   doc.setDrawColor(220, 215, 213);
-  doc.setFillColor(250, 240, 237); // Light terracota fill
+  doc.setFillColor(250, 240, 237);
   doc.roundedRect(photoX, photoY, photoSize, photoSize, 2, 2, 'FD');
 
   if (petPhotoBase64) {
@@ -327,7 +344,6 @@ export async function generateLibreta(rawData) {
 
   currentY += 9;
 
-  // Preparar tabla de vacunas y eventos
   const tableRows = data.historial.length > 0
     ? data.historial.map((item) => [
         formatDate(item.fecha),
@@ -375,7 +391,7 @@ export async function generateLibreta(rawData) {
   applyOfficialFooter(doc, 1, data.options.includeActa ? 2 : 1);
 
   // =========================================================================
-  // PÁGINA 2: ACTA DE ADOPCIÓN, COMPROMISO Y VALIDACIÓN DIGITAL
+  // PÁGINA 2: ACTA DE ADOPCIÓN, COMPROMISO Y VALIDACIÓN DIGITAL CON QR REAL
   // =========================================================================
   if (data.options.includeActa) {
     doc.addPage();
@@ -450,12 +466,12 @@ export async function generateLibreta(rawData) {
 
     currentY += 28;
 
-    // --- SECCIÓN: SLOTS PARA FIRMAS, QR Y SELLO OFICIAL ---
+    // --- SECCIÓN: FIRMAS + QR CODE REAL DINÁMICO ---
     const signBoxHeight = 52;
     doc.setDrawColor(220, 215, 213);
     doc.rect(PAGE_CONFIG.marginLeft, currentY, contentWidth, signBoxHeight);
 
-    const signColWidth = (contentWidth - 45) / 2; // Espacio para 2 firmas + slot QR/Sello a la derecha
+    const signColWidth = (contentWidth - 45) / 2;
 
     // Firma 1: Adoptante
     const sig1X = PAGE_CONFIG.marginLeft + 5;
@@ -472,7 +488,7 @@ export async function generateLibreta(rawData) {
     doc.text(`Aclaración: ${data.adoptante.nombre}`, sig1X + (signColWidth - 10) / 2, currentY + 44, { align: 'center' });
     doc.text(`DNI: ${data.adoptante.dni}`, sig1X + (signColWidth - 10) / 2, currentY + 48, { align: 'center' });
 
-    // Firma 2: Rescatista / Responsable
+    // Firma 2: Rescatista / Organización
     const sig2X = sig1X + signColWidth;
     doc.line(sig2X, currentY + 36, sig2X + signColWidth - 10, currentY + 36);
 
@@ -484,45 +500,163 @@ export async function generateLibreta(rawData) {
     doc.setFontSize(7);
     doc.setTextColor(110, 98, 95);
     doc.text(`Por: ${data.options.organizationName}`, sig2X + (signColWidth - 10) / 2, currentY + 44, { align: 'center' });
-    doc.text('Firma y Sello de Entrega', sig2X + (signColWidth - 10) / 2, currentY + 48, { align: 'center' });
+    doc.text('Firma y Sello de Custodia', sig2X + (signColWidth - 10) / 2, currentY + 48, { align: 'center' });
 
-    // Slot 3: Validación Digital QR y Sello de Organización
+    // Slot 3: Validación Digital con Código QR Dinámico Real
     const qrSlotX = PAGE_CONFIG.marginLeft + contentWidth - 42;
     doc.setFillColor(250, 246, 245);
-    doc.setDrawColor(220, 215, 213);
+    doc.setDrawColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
     doc.roundedRect(qrSlotX, currentY + 3, 38, 46, 2, 2, 'FD');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
     doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
-    doc.text('VALIDACIÓN DIGITAL', qrSlotX + 19, currentY + 7, { align: 'center' });
+    doc.text('VALIDACIÓN DIGITAL', qrSlotX + 19, currentY + 6.8, { align: 'center' });
 
-    // Recuadro interior para el código QR dinámico
-    doc.setDrawColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
-    doc.rect(qrSlotX + 6.5, currentY + 9, 25, 25);
-
-    // Representación gráfica de QR o texto verificador
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(43, 35, 33);
-    doc.text('CÓDIGO QR', qrSlotX + 19, currentY + 20, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.setTextColor(110, 98, 95);
-    doc.text('Escanear para', qrSlotX + 19, currentY + 24, { align: 'center' });
-    doc.text('ficha online', qrSlotX + 19, currentY + 27, { align: 'center' });
+    // Inyección de imagen QR real generada dinámicamente
+    if (qrCodeBase64) {
+      try {
+        doc.addImage(qrCodeBase64, 'PNG', qrSlotX + 7, currentY + 8.5, 24, 24);
+      } catch (err) {
+        // Fallback gráfico
+        doc.setDrawColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+        doc.rect(qrSlotX + 7, currentY + 8.5, 24, 24);
+      }
+    }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6.5);
     doc.setTextColor(43, 35, 33);
-    doc.text(`ID: ${data.mascota.codigo_interno}`, qrSlotX + 19, currentY + 38, { align: 'center' });
+    doc.text(`ID: ${data.mascota.codigo_interno}`, qrSlotX + 19, currentY + 36.5, { align: 'center' });
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(5.5);
     doc.setTextColor(110, 98, 95);
-    doc.text('lumia.ar/verificar', qrSlotX + 19, currentY + 42, { align: 'center' });
+    doc.text('Escanear para ficha online', qrSlotX + 19, currentY + 40, { align: 'center' });
+    doc.text('lumia.ar/verificar', qrSlotX + 19, currentY + 43.5, { align: 'center' });
 
     applyOfficialFooter(doc, 2, 2);
   }
+
+  return doc;
+}
+
+/**
+ * GENERADOR DE CREDENCIAL DE COLLAR / CARNET DE BOLSILLO LUMIA
+ * Formato: Tarjeta de identidad (85.6mm x 53.98mm formato ID-1 / tarjeta de crédito)
+ */
+export async function generateCredencial(rawData) {
+  const data = normalizeLibretaData(rawData);
+  // Formato tipo tarjeta (86mm x 54mm) apaisado
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: [86, 54],
+    orientation: 'landscape'
+  });
+
+  const [petPhotoBase64, qrCodeBase64] = await Promise.all([
+    data.mascota.foto_url ? loadImgToBase64(data.mascota.foto_url) : Promise.resolve(null),
+    generateQrBase64(data.options.qrCodeUrl)
+  ]);
+
+  // --- CARA FRONTAL (ANVERSO) ---
+  // Fondo decorativo
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 86, 54, 'F');
+
+  // Franja superior #C94A2A
+  doc.setFillColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.rect(0, 0, 86, 11, 'F');
+
+  // Mini logo / texto
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text('LUMIA', 4, 7.5);
+  doc.setFontSize(5.5);
+  doc.text('CREDENCIAL NACIONAL DE MASCOTA', 20, 7.5);
+
+  // Foto Mascota
+  doc.setDrawColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.setFillColor(250, 240, 237);
+  doc.roundedRect(4, 14, 26, 26, 1.5, 1.5, 'FD');
+
+  if (petPhotoBase64) {
+    try {
+      doc.addImage(petPhotoBase64, 'JPEG', 4.5, 14.5, 25, 25);
+    } catch (e) {
+      doc.setFontSize(12);
+      doc.text('🐾', 17, 28, { align: 'center' });
+    }
+  }
+
+  // Datos
+  doc.setTextColor(43, 35, 33);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(data.mascota.nombre.toUpperCase(), 33, 19);
+
+  doc.setFontSize(6.5);
+  doc.setTextColor(110, 98, 95);
+  doc.text('CÓDIGO / CHIP:', 33, 25);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.text(data.mascota.codigo_interno, 55, 25);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(110, 98, 95);
+  doc.text('ESPECIE / SEXO:', 33, 30);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(43, 35, 33);
+  doc.text(`${data.mascota.especie.toUpperCase()} • ${data.mascota.sexo}`, 55, 30);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(110, 98, 95);
+  doc.text('CONTACTO TUTOR:', 33, 35);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(43, 35, 33);
+  doc.text(data.adoptante.telefono || '-', 55, 35);
+
+  // Franja inferior con alerta de extravío
+  doc.setFillColor(250, 240, 237);
+  doc.rect(0, 43, 86, 11, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5.5);
+  doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.text('SI ME ENCONTRÁS EXTRAVIADO, ESCANEÁ EL QR DEL DORSO', 43, 49.5, { align: 'center' });
+
+  // --- CARA TRASERA (REVERSO) ---
+  doc.addPage([86, 54], 'landscape');
+
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 86, 54, 'F');
+
+  // Franja superior reverso
+  doc.setFillColor(43, 35, 33);
+  doc.rect(0, 0, 86, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(5.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text('PASAPORTE DIGITAL VERIFICABLE • LEY 25.326', 43, 5, { align: 'center' });
+
+  // QR Centrado
+  if (qrCodeBase64) {
+    try {
+      doc.addImage(qrCodeBase64, 'PNG', 28, 9, 30, 30);
+    } catch (e) {
+      // Ignorar
+    }
+  }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.text(`ID: ${data.mascota.codigo_interno}`, 43, 42, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5);
+  doc.setTextColor(110, 98, 95);
+  doc.text('Escaneá para acceder a la ficha digital, teléfonos y vacunas al día', 43, 46, { align: 'center' });
+  doc.text('Red Nacional LUMIA • lumia.ar/verificar', 43, 49.5, { align: 'center' });
 
   return doc;
 }
@@ -551,6 +685,20 @@ export async function downloadLibretaPdf(data, customFilename = null) {
     .replace(/\s+/g, '_');
   const code = (data?.mascota?.codigo_interno || 'LUM').toLowerCase();
   const filename = customFilename || `LUMIA_Libreta_${animalName}_${code}.pdf`;
+
+  doc.save(filename);
+  return filename;
+}
+
+/**
+ * Descarga la credencial de bolsillo
+ */
+export async function downloadCredencialPdf(data, customFilename = null) {
+  const doc = await generateCredencial(data);
+  const animalName = (data?.mascota?.nombre_actual || data?.mascota?.nombre || 'mascota')
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  const filename = customFilename || `LUMIA_Credencial_${animalName}.pdf`;
 
   doc.save(filename);
   return filename;

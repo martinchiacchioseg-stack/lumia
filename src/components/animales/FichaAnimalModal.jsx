@@ -5,7 +5,8 @@ import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { Logo } from '../common/Logo';
 import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate } from '../../lib/formatters';
-import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService';
+import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService.js';
+import { VerificacionPublicaModal } from '../public/VerificacionPublicaModal';
 import { 
   Dog, 
   Cat, 
@@ -23,7 +24,8 @@ import {
   FileText,
   UserCheck,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
@@ -40,6 +42,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
 
   const [activeTab, setActiveTab] = useState('datos');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Estado para nuevo evento de salud
   const [showAddHealth, setShowAddHealth] = useState(false);
@@ -187,18 +190,28 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
           </div>
         </div>
 
-        <button
-          onClick={handleDownloadOfficialPdf}
-          disabled={isGeneratingPdf}
-          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-lumia-700 font-extrabold text-xs hover:bg-lumia-50 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-        >
-          {isGeneratingPdf ? (
-            <div className="w-4 h-4 border-2 border-lumia-600 border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <Download className="w-4 h-4 text-lumia-600" />
-          )}
-          <span>{isGeneratingPdf ? 'Generando PDF...' : 'Descargar Libreta Oficial (PDF)'}</span>
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setShowQrModal(true)}
+            className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-lumia-800/40 hover:bg-lumia-800/60 border border-white/20 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-1.5"
+          >
+            <QrCode className="w-4 h-4 text-lumia-200" />
+            <span>Ficha QR</span>
+          </button>
+
+          <button
+            onClick={handleDownloadOfficialPdf}
+            disabled={isGeneratingPdf}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-lumia-700 font-extrabold text-xs hover:bg-lumia-50 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+          >
+            {isGeneratingPdf ? (
+              <div className="w-4 h-4 border-2 border-lumia-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Download className="w-4 h-4 text-lumia-600" />
+            )}
+            <span>{isGeneratingPdf ? 'Generando PDF...' : 'Descargar Libreta (PDF)'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs Principales de la Ficha */}
@@ -719,6 +732,18 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             </>
           )}
         </div>
+      )}
+
+      {/* Modal Ficha Digital Pública con QR */}
+      {showQrModal && (
+        <VerificacionPublicaModal
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
+          animal={animal}
+          adoptante={adopter}
+          adopcion={adoption}
+          eventosSalud={animalHealthEvents}
+        />
       )}
     </Modal>
   );
