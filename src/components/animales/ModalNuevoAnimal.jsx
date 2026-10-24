@@ -1,11 +1,36 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
 import { Dog, Cat, Sparkles, MapPin, Heart, Stethoscope, Camera, UserCheck, CheckCircle2, Phone, Home } from 'lucide-react';
+
+const ANIMAL_SCHEMA = [
+  { name: 'nombre_actual', label: 'Nombre actual del animal', type: 'string', context: 'Nombre asignado o al que responde' },
+  { name: 'nombre_anterior_apodo', label: 'Apodo o nombre anterior', type: 'string' },
+  { name: 'especie', label: 'Especie', type: 'select', options: ['perro', 'gato'], context: 'Especie canina o felina' },
+  { name: 'sexo', label: 'Sexo', type: 'select', options: ['macho', 'hembra'] },
+  { name: 'edad_estimada', label: 'Edad aproximada', type: 'select', options: ['cachorro', 'joven', 'adulto', 'geronte'] },
+  { name: 'tamano', label: 'Tamaño', type: 'select', options: ['chico', 'mediano', 'grande', 'gigante'] },
+  { name: 'pelaje_color_senas_particulares', label: 'Pelaje y señas particulares', type: 'string', context: 'Color, manchas, tipo de pelo, cicatrices' },
+  { name: 'fecha_rescate', label: 'Fecha de rescate', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'ubicacion_rescate', label: 'Lugar de rescate', type: 'string', context: 'Barrio, calle o localidad donde fue encontrado' },
+  { name: 'transito_nombre', label: 'Responsable del hogar de tránsito', type: 'string' },
+  { name: 'transito_telefono', label: 'Teléfono de contacto de tránsito', type: 'string' },
+  { name: 'transito_direccion', label: 'Dirección de tránsito', type: 'string' },
+  { name: 'relacion_con_perros', label: 'Convivencia con otros perros', type: 'string' },
+  { name: 'relacion_con_gatos', label: 'Convivencia con gatos', type: 'string' },
+  { name: 'relacion_con_personas', label: 'Relación con personas y niños', type: 'string' },
+  { name: 'nivel_energia', label: 'Nivel de energía', type: 'select', options: ['tranquilo', 'moderado', 'alto'] },
+  { name: 'manejo_correa_paseos', label: 'Manejo de correa y paseos', type: 'string' },
+  { name: 'notas_conducta', label: 'Notas de conducta y temperamento', type: 'string' },
+  { name: 'alimentacion_recomendada', label: 'Alimentación recomendada', type: 'string' }
+];
 
 export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
   const { addAnimal, updateAnimal, generateAnimalCode, adopciones, adoptantes } = useData();
   const [activeStep, setActiveStep] = useState(1);
+  const [aiFilledFields, setAiFilledFields] = useState([]);
 
   // Vincular adoptante si el caso ya está adoptado
   const existingAdoption = initialData ? (adopciones || []).find(a => a.animal_id === initialData.id && !a.archivado) : null;
@@ -35,6 +60,11 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
     foto_portada: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
     ...(initialData || {})
   });
+
+  const handleAIScanComplete = (extractedData, filledKeys) => {
+    setFormData(prev => ({ ...prev, ...extractedData }));
+    setAiFilledFields(filledKeys || []);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,6 +100,25 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
       title={initialData?.id ? `Editar a ${formData.nombre_actual}` : "Ficha de Nuevo Animal Rescatado"}
       subtitle="Completá los datos básicos del caso para centralizar su seguimiento"
     >
+      {/* Barra de Autocompletado con Visión por IA */}
+      <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-50/70 via-lumia-50/70 to-emerald-50/70 border border-lumia-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-lumia-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="block text-xs font-bold text-stone-900">Autocompletar con Visión por IA</span>
+            <span className="block text-[11px] text-stone-500">Fotografiá o subí la cartilla, libreta o ficha clínica</span>
+          </div>
+        </div>
+
+        <SmartCameraInput
+          schema={ANIMAL_SCHEMA}
+          formTitle="Ficha del Animal"
+          onScanComplete={handleAIScanComplete}
+        />
+      </div>
+
       {/* Pasos / Tabs del formulario */}
       <div className="flex border-b border-stone-200 mb-5 overflow-x-auto scrollbar-hide text-xs font-bold">
         <button
@@ -107,7 +156,10 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
           <div className="space-y-4 animate-in fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Nombre actual *</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Nombre actual *
+                  <AIFieldBadge isAIFilled={aiFilledFields.includes('nombre_actual')} />
+                </label>
                 <input
                   type="text"
                   required
@@ -115,19 +167,28 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
                   value={formData.nombre_actual}
                   onChange={handleChange}
                   placeholder="Ej: Luna, Milo, Negrito"
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  className={getAIFieldClass(
+                    aiFilledFields.includes('nombre_actual'),
+                    "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  )}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Apodo o nombre anterior</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Apodo o nombre anterior
+                  <AIFieldBadge isAIFilled={aiFilledFields.includes('nombre_anterior_apodo')} />
+                </label>
                 <input
                   type="text"
                   name="nombre_anterior_apodo"
                   value={formData.nombre_anterior_apodo}
                   onChange={handleChange}
                   placeholder="Ej: Lunita, El barbas"
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  className={getAIFieldClass(
+                    aiFilledFields.includes('nombre_anterior_apodo'),
+                    "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  )}
                 />
               </div>
             </div>
@@ -196,6 +257,7 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">
                 Pelaje, color y señas particulares
+                <AIFieldBadge isAIFilled={aiFilledFields.includes('pelaje_color_senas_particulares')} />
               </label>
               <textarea
                 name="pelaje_color_senas_particulares"
@@ -203,7 +265,10 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
                 value={formData.pelaje_color_senas_particulares}
                 onChange={handleChange}
                 placeholder="Ej: Negro azabache con manchita blanca en el pecho, oreja izquierda caída..."
-                className="w-full px-3.5 py-2 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                className={getAIFieldClass(
+                  aiFilledFields.includes('pelaje_color_senas_particulares'),
+                  "w-full px-3.5 py-2 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                )}
               />
             </div>
 
@@ -256,13 +321,19 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Fecha de rescate</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Fecha de rescate
+                  <AIFieldBadge isAIFilled={aiFilledFields.includes('fecha_rescate')} />
+                </label>
                 <input
                   type="date"
                   name="fecha_rescate"
                   value={formData.fecha_rescate}
                   onChange={handleChange}
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  className={getAIFieldClass(
+                    aiFilledFields.includes('fecha_rescate'),
+                    "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                  )}
                 />
               </div>
             </div>
@@ -270,6 +341,7 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">
                 Ubicación del rescate (barrio, localidad o calle)
+                <AIFieldBadge isAIFilled={aiFilledFields.includes('ubicacion_rescate')} />
               </label>
               <input
                 type="text"
@@ -277,7 +349,10 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
                 value={formData.ubicacion_rescate}
                 onChange={handleChange}
                 placeholder="Ej: Parque Patricios, CABA / Estación Lanús"
-                className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                className={getAIFieldClass(
+                  aiFilledFields.includes('ubicacion_rescate'),
+                  "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                )}
               />
             </div>
 

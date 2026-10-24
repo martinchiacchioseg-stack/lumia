@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
-import { Camera, MapPin, AlertTriangle, Navigation, Upload } from 'lucide-react';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
+import { Camera, MapPin, AlertTriangle, Navigation, Upload, Sparkles } from 'lucide-react';
+
+const REPORTE_SCHEMA = [
+  { name: 'descripcion', label: 'Descripción de lo observado y estado del animal', type: 'string', context: 'Especie, tamaño, color, heridas, comportamiento y estado' },
+  { name: 'nivel_urgencia', label: 'Nivel de urgencia', type: 'select', options: ['bajo', 'medio', 'alto', 'crítico'], context: 'Gravedad del animal' },
+  { name: 'direccion_aproximada', label: 'Dirección o punto de referencia', type: 'string', context: 'Calle, esquina, comercio o punto geográfico' }
+];
 
 export function ModalNuevoReporteCalle({ isOpen, onClose }) {
   const { addReporteCalle } = useData();
+  const [aiFilledFields, setAiFilledFields] = useState([]);
 
   const [formData, setFormData] = useState({
     descripcion: '',
@@ -17,6 +26,11 @@ export function ModalNuevoReporteCalle({ isOpen, onClose }) {
 
   const [geoLoading, setGeoLoading] = useState(false);
   const [photoUrlInput, setPhotoUrlInput] = useState('');
+
+  const handleAIScanComplete = (extractedData, filledKeys) => {
+    setFormData(prev => ({ ...prev, ...extractedData }));
+    setAiFilledFields(filledKeys || []);
+  };
 
   // Capturar geolocalización del celular
   const handleGetLocation = () => {
@@ -66,11 +80,31 @@ export function ModalNuevoReporteCalle({ isOpen, onClose }) {
       subtitle="Alerta comunitaria para relevar animales heridos, perdidos o en riesgo"
       maxWidth="max-w-lg"
     >
+      {/* Barra de Autocompletado con Visión por IA */}
+      <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-50/70 via-lumia-50/70 to-emerald-50/70 border border-lumia-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-lumia-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="block text-xs font-bold text-stone-900">Autocompletar con Visión por IA</span>
+            <span className="block text-[11px] text-stone-500">Fotografiá al animal en la calle o subí una captura del aviso</span>
+          </div>
+        </div>
+
+        <SmartCameraInput
+          schema={REPORTE_SCHEMA}
+          formTitle="Reporte de Calle"
+          onScanComplete={handleAIScanComplete}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Nivel de Urgencia */}
         <div>
           <label className="block text-xs font-bold text-stone-700 mb-1.5 uppercase tracking-wider">
             Nivel de Urgencia *
+            <AIFieldBadge isAIFilled={aiFilledFields.includes('nivel_urgencia')} />
           </label>
           <div className="grid grid-cols-4 gap-2 text-xs font-bold text-center">
             {[
@@ -99,6 +133,7 @@ export function ModalNuevoReporteCalle({ isOpen, onClose }) {
         <div>
           <label className="block text-xs font-bold text-stone-700 mb-1">
             ¿Qué viste y en qué estado está el animal? *
+            <AIFieldBadge isAIFilled={aiFilledFields.includes('descripcion')} />
           </label>
           <textarea
             required
@@ -106,14 +141,20 @@ export function ModalNuevoReporteCalle({ isOpen, onClose }) {
             value={formData.descripcion}
             onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
             placeholder="Ej: Perrito mestizo atropellado, renguea mucho y está asustado debajo de un banco..."
-            className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+            className={getAIFieldClass(
+              aiFilledFields.includes('descripcion'),
+              "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+            )}
           />
         </div>
 
         {/* Ubicación y Botón GPS */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-bold text-stone-700">Dirección o punto de referencia</label>
+            <label className="block text-xs font-bold text-stone-700">
+              Dirección o punto de referencia
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('direccion_aproximada')} />
+            </label>
             <button
               type="button"
               onClick={handleGetLocation}
@@ -132,7 +173,10 @@ export function ModalNuevoReporteCalle({ isOpen, onClose }) {
               value={formData.direccion_aproximada}
               onChange={(e) => setFormData({ ...formData, direccion_aproximada: e.target.value })}
               placeholder="Ej: Av. Rivadavia 4300, Almagro, CABA"
-              className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('direccion_aproximada'),
+                "w-full pl-9 pr-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
         </div>

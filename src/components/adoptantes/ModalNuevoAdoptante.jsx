@@ -1,10 +1,30 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
-import { ShieldCheck, User, MapPin, Phone, Home, Lock } from 'lucide-react';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
+import { ShieldCheck, User, MapPin, Phone, Home, Lock, Sparkles } from 'lucide-react';
+
+const ADOPTANTE_SCHEMA = [
+  { name: 'nombre_apellido', label: 'Nombre y Apellido completo', type: 'string', context: 'Titular de la adopción según DNI o formulario' },
+  { name: 'dni_cuit', label: 'Número de DNI o CUIT', type: 'string', context: '8 u 11 dígitos, sin puntos' },
+  { name: 'telefono_whatsapp', label: 'Teléfono celular / WhatsApp', type: 'string' },
+  { name: 'telefono_secundario', label: 'Teléfono secundario o de línea', type: 'string' },
+  { name: 'direccion_calle', label: 'Calle', type: 'string' },
+  { name: 'direccion_numero', label: 'Altura / Número de calle', type: 'string' },
+  { name: 'direccion_piso_depto', label: 'Piso y Departamento', type: 'string' },
+  { name: 'direccion_barrio', label: 'Barrio', type: 'string' },
+  { name: 'direccion_localidad', label: 'Localidad o Ciudad', type: 'string' },
+  { name: 'direccion_provincia', label: 'Provincia', type: 'string' },
+  { name: 'tipo_vivienda', label: 'Tipo de vivienda', type: 'select', options: ['departamento', 'casa con patio cerrado', 'casa con patio abierto', 'ph', 'quinta/campo'] },
+  { name: 'condicion_vivienda', label: 'Condición de vivienda', type: 'select', options: ['propietario', 'inquilino'] },
+  { name: 'redes_instagram', label: 'Usuario de Instagram', type: 'string' },
+  { name: 'redes_facebook', label: 'Usuario o perfil de Facebook', type: 'string' }
+];
 
 export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
   const { addAdoptante, updateAdoptante } = useData();
+  const [aiFilledFields, setAiFilledFields] = useState([]);
 
   const [formData, setFormData] = useState({
     nombre_apellido: '',
@@ -27,6 +47,11 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
     consentimiento_datos: true,
     ...(initialData || {})
   });
+
+  const handleAIScanComplete = (extractedData, filledKeys) => {
+    setFormData(prev => ({ ...prev, ...extractedData }));
+    setAiFilledFields(filledKeys || []);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -65,6 +90,25 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
       subtitle="Datos de contacto y habitacionales para seguimiento responsable"
       maxWidth="max-w-2xl"
     >
+      {/* Barra de Autocompletado con Visión por IA */}
+      <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-50/70 via-lumia-50/70 to-emerald-50/70 border border-lumia-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-lumia-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="block text-xs font-bold text-stone-900">Autocompletar con Visión por IA</span>
+            <span className="block text-[11px] text-stone-500">Fotografiá el DNI, solicitud de adopción o servicio</span>
+          </div>
+        </div>
+
+        <SmartCameraInput
+          schema={ADOPTANTE_SCHEMA}
+          formTitle="Ficha del Adoptante"
+          onScanComplete={handleAIScanComplete}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Aviso de Confidencialidad Ley 25.326 */}
         <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-2.5 text-xs text-stone-600">
@@ -77,7 +121,10 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
         {/* Datos Personales */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Nombre y Apellido *</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              Nombre y Apellido *
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('nombre_apellido')} />
+            </label>
             <input
               type="text"
               required
@@ -85,12 +132,18 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
               value={formData.nombre_apellido}
               onChange={handleChange}
               placeholder="Ej: Carla Rossi"
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('nombre_apellido'),
+                "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">DNI o CUIT *</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              DNI o CUIT *
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('dni_cuit')} />
+            </label>
             <input
               type="text"
               required
@@ -98,7 +151,10 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
               value={formData.dni_cuit}
               onChange={handleChange}
               placeholder="Ej: 35.442.119"
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('dni_cuit'),
+                "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
         </div>
@@ -106,7 +162,10 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
         {/* Contacto */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">WhatsApp Principal *</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              WhatsApp Principal *
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('telefono_whatsapp')} />
+            </label>
             <input
               type="text"
               required
@@ -114,19 +173,28 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
               value={formData.telefono_whatsapp}
               onChange={handleChange}
               placeholder="Ej: +54 9 11 5544-3322"
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('telefono_whatsapp'),
+                "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Teléfono Alternativo</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              Teléfono Alternativo
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('telefono_secundario')} />
+            </label>
             <input
               type="text"
               name="telefono_secundario"
               value={formData.telefono_secundario}
               onChange={handleChange}
               placeholder="Fijo o de familiar"
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('telefono_secundario'),
+                "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
         </div>
@@ -145,7 +213,10 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
                 value={formData.direccion_calle}
                 onChange={handleChange}
                 placeholder="Calle"
-                className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                className={getAIFieldClass(
+                  aiFilledFields.includes('direccion_calle'),
+                  "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                )}
               />
             </div>
             <div>
@@ -155,7 +226,10 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
                 value={formData.direccion_numero}
                 onChange={handleChange}
                 placeholder="Número"
-                className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                className={getAIFieldClass(
+                  aiFilledFields.includes('direccion_numero'),
+                  "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                )}
               />
             </div>
           </div>

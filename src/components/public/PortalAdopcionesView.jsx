@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Logo } from '../common/Logo';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
@@ -24,6 +26,14 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+const POSTULACION_SCHEMA = [
+  { name: 'nombre', label: 'Nombre Completo', type: 'string', context: 'Nombre y apellido del postulante' },
+  { name: 'telefono', label: 'WhatsApp de contacto', type: 'string', context: 'Número celular' },
+  { name: 'email', label: 'Correo electrónico', type: 'string' },
+  { name: 'localidad', label: 'Localidad o barrio', type: 'string' },
+  { name: 'tipoVivienda', label: 'Tipo de vivienda', type: 'select', options: ['Casa con patio cerrado', 'Departamento con red', 'Departamento sin red', 'Quinta / Campo'] }
+];
+
 export function PortalAdopcionesView({ onBackToApp }) {
   const { animales, noticias, addNoticia, addAdoptante, configPortal } = useData();
   const { currentUser } = useAuth();
@@ -35,6 +45,7 @@ export function PortalAdopcionesView({ onBackToApp }) {
 
   // Modales
   const [selectedAnimalPostular, setSelectedAnimalPostular] = useState(null);
+  const [aiFilledPostulacionFields, setAiFilledPostulacionFields] = useState([]);
   const [showNuevaNoticiaModal, setShowNuevaNoticiaModal] = useState(false);
   const [postulacionEnviada, setPostulacionEnviada] = useState(false);
 
@@ -548,43 +559,75 @@ export function PortalAdopcionesView({ onBackToApp }) {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmitPostulacion} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-stone-700 uppercase mb-1">Nombre Completo *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formPostulacion.nombre}
-                    onChange={(e) => setFormPostulacion({ ...formPostulacion, nombre: e.target.value })}
-                    placeholder="Ej: Laura Gómez"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
+              <>
+                <div className="mb-3 p-2.5 rounded-xl bg-lumia-50/70 border border-lumia-200 flex items-center justify-between gap-2 shadow-xs">
+                  <span className="text-[11px] font-bold text-stone-800">Autocompletar con DNI o credencial</span>
+                  <SmartCameraInput
+                    schema={POSTULACION_SCHEMA}
+                    formTitle="Postulación de Adopción"
+                    buttonText="Escanear con Foto"
+                    onScanComplete={(extractedData, filledKeys) => {
+                      setFormPostulacion(prev => ({ ...prev, ...extractedData }));
+                      setAiFilledPostulacionFields(filledKeys || []);
+                    }}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <form onSubmit={handleSubmitPostulacion} className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-stone-700 uppercase mb-1">WhatsApp de Contacto *</label>
+                    <label className="block font-bold text-stone-700 uppercase mb-1">
+                      Nombre Completo *
+                      <AIFieldBadge isAIFilled={aiFilledPostulacionFields.includes('nombre')} />
+                    </label>
                     <input
                       type="text"
                       required
-                      value={formPostulacion.telefono}
-                      onChange={(e) => setFormPostulacion({ ...formPostulacion, telefono: e.target.value })}
-                      placeholder="+54 9 11 ..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-lumia-500"
+                      value={formPostulacion.nombre}
+                      onChange={(e) => setFormPostulacion({ ...formPostulacion, nombre: e.target.value })}
+                      placeholder="Ej: Laura Gómez"
+                      className={getAIFieldClass(
+                        aiFilledPostulacionFields.includes('nombre'),
+                        "w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
+                      )}
                     />
                   </div>
-                  <div>
-                    <label className="block font-bold text-stone-700 uppercase mb-1">Localidad / Barrio *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formPostulacion.localidad}
-                      onChange={(e) => setFormPostulacion({ ...formPostulacion, localidad: e.target.value })}
-                      placeholder="Ej: Flores, CABA"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
-                    />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">
+                        WhatsApp de Contacto *
+                        <AIFieldBadge isAIFilled={aiFilledPostulacionFields.includes('telefono')} />
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formPostulacion.telefono}
+                        onChange={(e) => setFormPostulacion({ ...formPostulacion, telefono: e.target.value })}
+                        placeholder="+54 9 11 ..."
+                        className={getAIFieldClass(
+                          aiFilledPostulacionFields.includes('telefono'),
+                          "w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-lumia-500"
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 uppercase mb-1">
+                        Localidad / Barrio *
+                        <AIFieldBadge isAIFilled={aiFilledPostulacionFields.includes('localidad')} />
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formPostulacion.localidad}
+                        onChange={(e) => setFormPostulacion({ ...formPostulacion, localidad: e.target.value })}
+                        placeholder="Ej: Flores, CABA"
+                        className={getAIFieldClass(
+                          aiFilledPostulacionFields.includes('localidad'),
+                          "w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
+                        )}
+                      />
+                    </div>
                   </div>
-                </div>
 
                 <div>
                   <label className="block font-bold text-stone-700 uppercase mb-1">Tipo de Vivienda</label>
@@ -627,6 +670,7 @@ export function PortalAdopcionesView({ onBackToApp }) {
                   </button>
                 </div>
               </form>
+              </>
             )}
           </div>
         </div>

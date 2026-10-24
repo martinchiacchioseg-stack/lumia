@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
 import confetti from 'canvas-confetti';
-import { HeartHandshake, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { HeartHandshake, Calendar, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+
+const ADOPCION_SCHEMA = [
+  { name: 'fecha_entrega', label: 'Fecha de entrega', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'modalidad_entrega', label: 'Modalidad de entrega', type: 'select', options: ['llevado al domicilio', 'retirado por el adoptante'] },
+  { name: 'periodo_adaptacion_dias', label: 'Días de período de adaptación', type: 'number', context: 'Cantidad de días de adaptación' },
+  { name: 'compromiso_castracion', label: 'Compromiso de castración firmado', type: 'boolean' },
+  { name: 'fecha_limite_castracion', label: 'Fecha límite de castración', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'observaciones', label: 'Observaciones y acuerdos', type: 'string' }
+];
 
 export function ModalNuevaAdopcion({ isOpen, onClose }) {
   const { animales, adoptantes, addAdopcion } = useData();
+  const [aiFilledFields, setAiFilledFields] = useState([]);
 
   // Filtrar animales disponibles (no adoptados ni fallecidos)
   const availableAnimals = animales.filter(a => !a.archivado && a.estado_caso !== 'adoptado' && a.estado_caso !== 'fallecido');
@@ -22,6 +34,11 @@ export function ModalNuevaAdopcion({ isOpen, onClose }) {
     fecha_limite_castracion: '',
     observaciones: 'Adopción responsable concretada tras entrevista.'
   });
+
+  const handleAIScanComplete = (extractedData, filledKeys) => {
+    setFormData(prev => ({ ...prev, ...extractedData }));
+    setAiFilledFields(filledKeys || []);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -59,6 +76,25 @@ export function ModalNuevaAdopcion({ isOpen, onClose }) {
       subtitle="Generará automáticamente el calendario de 6 controles posadopción (48hs a 1 año)"
       maxWidth="max-w-xl"
     >
+      {/* Barra de Autocompletado con Visión por IA */}
+      <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-50/70 via-lumia-50/70 to-emerald-50/70 border border-lumia-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-lumia-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="block text-xs font-bold text-stone-900">Autocompletar con Visión por IA</span>
+            <span className="block text-[11px] text-stone-500">Fotografiá el contrato firmado, acta de entrega o acuerdo</span>
+          </div>
+        </div>
+
+        <SmartCameraInput
+          schema={ADOPCION_SCHEMA}
+          formTitle="Nueva Adopción"
+          onScanComplete={handleAIScanComplete}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Selección de Animal */}
         <div>
@@ -107,14 +143,20 @@ export function ModalNuevaAdopcion({ isOpen, onClose }) {
         {/* Entrega y modalidad */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">Fecha de Entrega</label>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              Fecha de Entrega
+              <AIFieldBadge isAIFilled={aiFilledFields.includes('fecha_entrega')} />
+            </label>
             <input
               type="date"
               required
               name="fecha_entrega"
               value={formData.fecha_entrega}
               onChange={handleChange}
-              className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              className={getAIFieldClass(
+                aiFilledFields.includes('fecha_entrega'),
+                "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+              )}
             />
           </div>
 

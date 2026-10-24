@@ -9,6 +9,8 @@ import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate, formatDNI 
 import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService.js';
 import { VerificacionPublicaModal } from '../public/VerificacionPublicaModal';
 import { ModalFlyerRedes } from './ModalFlyerRedes';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
 import { 
   Dog, 
   Cat, 
@@ -37,6 +39,33 @@ import {
   HeartHandshake
 } from 'lucide-react';
 
+const HEALTH_SCHEMA = [
+  { 
+    name: 'tipo_evento', 
+    label: 'Tipo de Evento Sanitario', 
+    type: 'select', 
+    options: [
+      'vacuna antirrábica',
+      'múltiple/séxtuple/triple felina',
+      'otras vacunas',
+      'castración/esterilización',
+      'desparasitación interna',
+      'desparasitación externa',
+      'consulta',
+      'cirugía',
+      'diagnóstico',
+      'tratamiento',
+      'estudio'
+    ],
+    context: 'Tipo de intervención médica o vacuna'
+  },
+  { name: 'producto_o_detalle', label: 'Vacuna, medicamento o detalle de diagnóstico', type: 'string', context: 'Marca comercial, lote de vacuna o descripción del fármaco' },
+  { name: 'fecha', label: 'Fecha de aplicación', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'profesional_veterinaria', label: 'Profesional veterinario/a o Matrícula MP', type: 'string' },
+  { name: 'fecha_proximo_refuerzo_o_vencimiento', label: 'Fecha de próximo refuerzo o vencimiento', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'lugar', label: 'Clínica, veterinaria o consultorio', type: 'string' }
+];
+
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
   const { openChatWithAnimal, canUseChat } = usePatitaChat() || {};
   const { 
@@ -58,6 +87,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
 
   // Estado para nuevo evento de salud
   const [showAddHealth, setShowAddHealth] = useState(false);
+  const [aiFilledHealthFields, setAiFilledHealthFields] = useState([]);
   const [healthForm, setHealthForm] = useState({
     tipo_evento: 'vacuna antirrábica',
     producto_o_detalle: '',
@@ -563,15 +593,37 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
           {/* Formulario para agregar evento de salud */}
           {showAddHealth && (
             <div className="p-4 rounded-3xl bg-stone-50 border border-lumia-300 space-y-3 animate-in fade-in">
-              <h4 className="text-xs font-bold text-lumia-800 uppercase tracking-wider">Nuevo Evento Médico</h4>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-lumia-200/80 pb-2.5">
+                <div>
+                  <h4 className="text-xs font-bold text-lumia-800 uppercase tracking-wider">Nuevo Evento Médico</h4>
+                  <p className="text-[11px] text-stone-500">Completá a mano o fotografiá el frasco de la vacuna o la receta</p>
+                </div>
+
+                <SmartCameraInput
+                  schema={HEALTH_SCHEMA}
+                  formTitle="Libreta Sanitaria"
+                  buttonText="Escanear Frasco / Receta"
+                  onScanComplete={(extractedData, filledKeys) => {
+                    setHealthForm(prev => ({ ...prev, ...extractedData }));
+                    setAiFilledHealthFields(filledKeys || []);
+                  }}
+                />
+              </div>
+
               <form onSubmit={handleSaveHealth} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Tipo de Evento</label>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Tipo de Evento
+                      <AIFieldBadge isAIFilled={aiFilledHealthFields.includes('tipo_evento')} />
+                    </label>
                     <select
                       value={healthForm.tipo_evento}
                       onChange={(e) => setHealthForm({ ...healthForm, tipo_evento: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white"
+                      className={getAIFieldClass(
+                        aiFilledHealthFields.includes('tipo_evento'),
+                        "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs bg-white"
+                      )}
                     >
                       <option value="vacuna antirrábica">Vacuna Antirrábica</option>
                       <option value="múltiple/séxtuple/triple felina">Múltiple / Séxtuple / Triple Felina</option>
@@ -588,47 +640,71 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Producto o Detalle *</label>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Producto o Detalle *
+                      <AIFieldBadge isAIFilled={aiFilledHealthFields.includes('producto_o_detalle')} />
+                    </label>
                     <input
                       type="text"
                       required
                       value={healthForm.producto_o_detalle}
                       onChange={(e) => setHealthForm({ ...healthForm, producto_o_detalle: e.target.value })}
                       placeholder="Ej: Rabisin lote 34B, Cefalexina 500mg, etc."
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      className={getAIFieldClass(
+                        aiFilledHealthFields.includes('producto_o_detalle'),
+                        "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      )}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Fecha de Aplicación</label>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Fecha de Aplicación
+                      <AIFieldBadge isAIFilled={aiFilledHealthFields.includes('fecha')} />
+                    </label>
                     <input
                       type="date"
                       value={healthForm.fecha}
                       onChange={(e) => setHealthForm({ ...healthForm, fecha: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      className={getAIFieldClass(
+                        aiFilledHealthFields.includes('fecha'),
+                        "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      )}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Veterinario/a o MP</label>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Veterinario/a o MP
+                      <AIFieldBadge isAIFilled={aiFilledHealthFields.includes('profesional_veterinaria')} />
+                    </label>
                     <input
                       type="text"
                       value={healthForm.profesional_veterinaria}
                       onChange={(e) => setHealthForm({ ...healthForm, profesional_veterinaria: e.target.value })}
                       placeholder="Dra. Silvina Romero"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      className={getAIFieldClass(
+                        aiFilledHealthFields.includes('profesional_veterinaria'),
+                        "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      )}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Próximo Refuerzo / Vencimiento</label>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Próximo Refuerzo / Vencimiento
+                      <AIFieldBadge isAIFilled={aiFilledHealthFields.includes('fecha_proximo_refuerzo_o_vencimiento')} />
+                    </label>
                     <input
                       type="date"
                       value={healthForm.fecha_proximo_refuerzo_o_vencimiento}
                       onChange={(e) => setHealthForm({ ...healthForm, fecha_proximo_refuerzo_o_vencimiento: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      className={getAIFieldClass(
+                        aiFilledHealthFields.includes('fecha_proximo_refuerzo_o_vencimiento'),
+                        "w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                      )}
                     />
                   </div>
                 </div>

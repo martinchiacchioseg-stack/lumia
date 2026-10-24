@@ -7,6 +7,8 @@ import { MODULOS, ACCIONES, PERMISO_DATOS_SENSIBLES } from '../../lib/permission
 import { formatDate } from '../../lib/formatters';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
 import { ModalCompartirDossier } from '../superadmin/ModalCompartirDossier';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { AIFieldBadge, getAIFieldClass } from '../common/AIFieldBadge';
 import { 
   ShieldCheck, 
   Users, 
@@ -26,6 +28,12 @@ import {
   Fingerprint
 } from 'lucide-react';
 
+const USER_SCHEMA = [
+  { name: 'nombre', label: 'Nombre Completo', type: 'string', context: 'Nombre y apellido del miembro del equipo' },
+  { name: 'email', label: 'Correo Electrónico', type: 'string', context: 'Email de acceso al sistema' },
+  { name: 'telefono', label: 'Teléfono celular', type: 'string', context: 'Número con código de área' }
+];
+
 export function UsuariosRolesView() {
   const { currentUser, users, createUser, updateUser, resetUserPassword, allPasskeyDevices } = useAuth();
   const { roles, saveRole, deleteRole } = usePermissions();
@@ -36,6 +44,7 @@ export function UsuariosRolesView() {
 
   // Modales
   const [showNewUserModal, setShowNewUserModal] = useState(false);
+  const [aiFilledUserFields, setAiFilledUserFields] = useState([]);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [tempPasswordModal, setTempPasswordModal] = useState({ isOpen: false, email: '', pass: '' });
@@ -440,39 +449,71 @@ export function UsuariosRolesView() {
           subtitle="Se le asignará una contraseña temporal y deberá cambiarla en el primer ingreso"
           maxWidth="max-w-md"
         >
+          {/* Barra de Autocompletado con IA */}
+          <div className="mb-4 p-3 rounded-2xl bg-lumia-50/70 border border-lumia-200/80 flex items-center justify-between gap-2 shadow-xs">
+            <span className="text-xs font-bold text-stone-800">Autocompletar con Foto</span>
+            <SmartCameraInput
+              schema={USER_SCHEMA}
+              formTitle="Nuevo Usuario"
+              buttonText="Escanear DNI"
+              onScanComplete={(extractedData, filledKeys) => {
+                setUserForm(prev => ({ ...prev, ...extractedData }));
+                setAiFilledUserFields(filledKeys || []);
+              }}
+            />
+          </div>
+
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Nombre Completo *</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">
+                Nombre Completo *
+                <AIFieldBadge isAIFilled={aiFilledUserFields.includes('nombre')} />
+              </label>
               <input
                 type="text"
                 required
                 value={userForm.nombre}
                 onChange={(e) => setUserForm({ ...userForm, nombre: e.target.value })}
                 placeholder="Ej: Laura Benítez"
-                className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                className={getAIFieldClass(
+                  aiFilledUserFields.includes('nombre'),
+                  "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                )}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Correo Electrónico *</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">
+                Correo Electrónico *
+                <AIFieldBadge isAIFilled={aiFilledUserFields.includes('email')} />
+              </label>
               <input
                 type="email"
                 required
                 value={userForm.email}
                 onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                 placeholder="laura@gmail.com"
-                className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                className={getAIFieldClass(
+                  aiFilledUserFields.includes('email'),
+                  "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                )}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Teléfono / Celular</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">
+                Teléfono / Celular
+                <AIFieldBadge isAIFilled={aiFilledUserFields.includes('telefono')} />
+              </label>
               <input
                 type="text"
                 value={userForm.telefono}
                 onChange={(e) => setUserForm({ ...userForm, telefono: e.target.value })}
                 placeholder="+54 9 11 ..."
-                className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                className={getAIFieldClass(
+                  aiFilledUserFields.includes('telefono'),
+                  "w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-patita-500"
+                )}
               />
             </div>
 
