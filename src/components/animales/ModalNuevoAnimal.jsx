@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
-import { Dog, Cat, Sparkles, MapPin, Heart, Stethoscope, Camera } from 'lucide-react';
+import { Dog, Cat, Sparkles, MapPin, Heart, Stethoscope, Camera, UserCheck, CheckCircle2, Phone, Home } from 'lucide-react';
 
 export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
-  const { addAnimal, updateAnimal, generateAnimalCode } = useData();
+  const { addAnimal, updateAnimal, generateAnimalCode, adopciones, adoptantes } = useData();
   const [activeStep, setActiveStep] = useState(1);
+
+  // Vincular adoptante si el caso ya está adoptado
+  const existingAdoption = initialData ? (adopciones || []).find(a => a.animal_id === initialData.id && !a.archivado) : null;
+  const existingAdopter = existingAdoption ? (adoptantes || []).find(ad => ad.id === existingAdoption.adoptante_id) : null;
 
   const [formData, setFormData] = useState({
     nombre_actual: '',
@@ -277,35 +281,74 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
               />
             </div>
 
-            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
-              <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">Hogar de tránsito actual / previo</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  name="transito_nombre"
-                  value={formData.transito_nombre}
-                  onChange={handleChange}
-                  placeholder="Nombre de la persona"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                />
-                <input
-                  type="text"
-                  name="transito_telefono"
-                  value={formData.transito_telefono}
-                  onChange={handleChange}
-                  placeholder="Teléfono / WhatsApp"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                />
-                <input
-                  type="text"
-                  name="transito_direccion"
-                  value={formData.transito_direccion}
-                  onChange={handleChange}
-                  placeholder="Dirección o barrio"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
-                />
+            {/* Si el animal está adoptado: Ficha del Adoptante en lugar del hogar de tránsito */}
+            {formData.estado_caso === 'adoptado' ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                    Animal Adoptado • Ficha del Adoptante (Hogar Definitivo)
+                  </h4>
+                </div>
+                {existingAdopter ? (
+                  <div className="p-3 bg-white rounded-xl border border-emerald-200/80 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-stone-900 text-sm">{existingAdopter.nombre_apellido}</span>
+                      <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        Familia Adoptiva Oficial
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-700">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="font-semibold">{existingAdopter.telefono_whatsapp}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>{existingAdopter.direccion_barrio || existingAdopter.direccion_localidad || 'Domicilio registrado'}</span>
+                    </div>
+                    {existingAdoption?.fecha_entrega && (
+                      <p className="text-[11px] text-stone-500 pt-1 border-t border-stone-100">
+                        Fecha de adopción: {existingAdoption.fecha_entrega}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Este animal está marcado como <strong>Adoptado</strong>. Los datos del adoptante, contrato y controles posadopción se administran en el módulo de <strong>Adopciones</strong>. No corresponde registrar un hogar de tránsito activo.
+                  </p>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+                <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">Hogar de tránsito actual / previo</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    type="text"
+                    name="transito_nombre"
+                    value={formData.transito_nombre}
+                    onChange={handleChange}
+                    placeholder="Nombre de la persona"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                  />
+                  <input
+                    type="text"
+                    name="transito_telefono"
+                    value={formData.transito_telefono}
+                    onChange={handleChange}
+                    placeholder="Teléfono / WhatsApp"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                  />
+                  <input
+                    type="text"
+                    name="transito_direccion"
+                    value={formData.transito_direccion}
+                    onChange={handleChange}
+                    placeholder="Dirección o barrio"
+                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between pt-3">
               <button

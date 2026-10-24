@@ -5,7 +5,7 @@ import { usePatitaChat } from '../../context/PatitaChatContext';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { Logo } from '../common/Logo';
-import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate } from '../../lib/formatters';
+import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate, formatDNI } from '../../lib/formatters';
 import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService.js';
 import { VerificacionPublicaModal } from '../public/VerificacionPublicaModal';
 import { ModalFlyerRedes } from './ModalFlyerRedes';
@@ -29,7 +29,12 @@ import {
   Sparkles,
   QrCode,
   Share2,
-  PawPrint
+  PawPrint,
+  Home,
+  Globe,
+  ShieldCheck,
+  Lock,
+  HeartHandshake
 } from 'lucide-react';
 
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
@@ -44,6 +49,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
     updateAnimal
   } = useData();
   const { hasPermission } = usePermissions();
+  const canSeeSensitive = hasPermission('datos_sensibles', 'ver') || hasPermission('adoptantes', 'ver_sensible');
 
   const [activeTab, setActiveTab] = useState('datos');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -367,6 +373,168 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   {animal.alimentacion_recomendada || 'Alimento balanceado estándar.'}
                 </p>
               </div>
+
+              {/* Si está adoptado: Ficha del Adoptante (Hogar Definitivo) en lugar de Hogar de Tránsito */}
+              {animal.estado_caso === 'adoptado' ? (
+                <div className="mt-4 p-4 rounded-3xl bg-emerald-50/70 border border-emerald-200/90 shadow-sm space-y-3.5 animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-emerald-200/60">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center shadow-sm shrink-0">
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full">
+                            Hogar Definitivo • Familia Adoptante
+                          </span>
+                        </div>
+                        <h4 className="font-extrabold text-stone-900 text-sm sm:text-base mt-0.5">
+                          {adopter?.nombre_apellido || 'Adoptante Registrado/a'}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {adopter?.telefono_whatsapp && (
+                      <a
+                        href={getWhatsappLink(adopter.telefono_whatsapp, getWhatsappTemplate({ adoptanteNombre: adopter.nombre_apellido, animalNombre: animal.nombre_actual }))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-colors self-start sm:self-auto"
+                        title="Contactar por WhatsApp para seguimiento posadopción"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>WhatsApp Adoptante</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {adopter ? (
+                    <div className="space-y-3 text-xs">
+                      {/* DNI y Ley 25.326 */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {canSeeSensitive ? (
+                          <span className="text-xs text-stone-700 font-semibold bg-white border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-xs">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            DNI: {formatDNI(adopter.dni_cuit)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-stone-500 font-medium bg-white border border-stone-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-xs">
+                            <Lock className="w-3.5 h-3.5 text-amber-600" />
+                            DNI Protegido (Ley 25.326)
+                          </span>
+                        )}
+
+                        {adoption?.fecha_entrega && (
+                          <span className="text-xs text-stone-600 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-xs">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                            Adopción: {formatDate(adoption.fecha_entrega)}
+                          </span>
+                        )}
+
+                        {adoption?.estado_adopcion && (
+                          <Badge variant={adoption.estado_adopcion === 'adopción consolidada' ? 'success' : 'primary'}>
+                            {adoption.estado_adopcion}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Contacto y Vivienda conforme a la ficha de adoptantes */}
+                      <div className="p-3 rounded-2xl bg-white/90 border border-emerald-200/70 space-y-2 text-stone-700">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="font-semibold">{adopter.telefono_whatsapp}</span>
+                          {adopter.telefono_secundario && (
+                            <span className="text-stone-400">/ {adopter.telefono_secundario}</span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          {canSeeSensitive ? (
+                            <span>
+                              {adopter.direccion_calle} {adopter.direccion_numero} {adopter.direccion_piso_depto} ({adopter.direccion_barrio || adopter.direccion_localidad})
+                            </span>
+                          ) : (
+                            <span className="text-stone-500">
+                              {adopter.direccion_barrio || adopter.direccion_localidad} (Calle exacta protegida por Ley 25.326)
+                            </span>
+                          )}
+                        </div>
+
+                        {adopter.tipo_vivienda && (
+                          <div className="flex items-center gap-2">
+                            <Home className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="capitalize">{adopter.tipo_vivienda} ({adopter.condicion_vivienda || 'convivencia familiar'})</span>
+                          </div>
+                        )}
+
+                        {adopter.redes_sociales?.instagram && (
+                          <div className="flex items-center gap-2 text-stone-500">
+                            <Globe className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>{adopter.redes_sociales.instagram}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Compromisos de la Adopción */}
+                      {adoption && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] pt-1">
+                          <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                            <span className="text-stone-400 block font-medium">Modalidad de entrega</span>
+                            <span className="font-bold text-stone-800 capitalize">{adoption.modalidad_entrega || 'Domicilio'}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                            <span className="text-stone-400 block font-medium">Período de adaptación</span>
+                            <span className="font-bold text-stone-800">{adoption.periodo_adaptacion_dias || 21} días</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-white border border-emerald-100 col-span-2 sm:col-span-1">
+                            <span className="text-stone-400 block font-medium">Castración</span>
+                            <span className="font-bold text-stone-800">
+                              {adoption.compromiso_castracion 
+                                ? `Compromiso hasta ${formatDate(adoption.fecha_limite_castracion)}` 
+                                : 'Realizada'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-2xl bg-white border border-emerald-200 text-xs text-stone-600">
+                      <p className="font-medium">El animal está catalogado como adoptado. Podés vincular o revisar los detalles en la pestaña de Adopciones.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Caso NO Adoptado: mostrar Hogar de Tránsito si existe */
+                (animal.transito_previo?.nombre || animal.transito_previo?.telefono || animal.transito_previo?.direccion) && (
+                  <div className="mt-4 p-4 rounded-3xl bg-amber-50/70 border border-amber-200/90 shadow-sm space-y-2.5 animate-in fade-in">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Home className="w-4 h-4 text-amber-700" />
+                        <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                          Hogar de Tránsito Actual / Previo
+                        </h4>
+                      </div>
+                      <Badge variant="warning">En Tránsito</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-700 pt-1">
+                      <div className="p-2.5 rounded-xl bg-white border border-amber-100">
+                        <span className="text-stone-400 block text-[10px] font-bold uppercase">Responsable de Tránsito</span>
+                        <span className="font-bold text-stone-800">{animal.transito_previo.nombre || 'No informado'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white border border-amber-100">
+                        <span className="text-stone-400 block text-[10px] font-bold uppercase">Teléfono de Contacto</span>
+                        <span className="font-bold text-stone-800">{animal.transito_previo.telefono || 'No informado'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white border border-amber-100">
+                        <span className="text-stone-400 block text-[10px] font-bold uppercase">Ubicación / Barrio</span>
+                        <span className="font-bold text-stone-800">{animal.transito_previo.direccion || 'No especificada'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -643,16 +811,22 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             </div>
           ) : (
             <>
-              {/* Tarjeta del Adoptante */}
-              <div className="p-4 rounded-3xl bg-lumia-50/60 border border-lumia-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-lumia-500 text-white font-bold flex items-center justify-center">
-                      <UserCheck className="w-5 h-5" />
+              {/* Tarjeta del Adoptante (Ficha Completa como en la sección Adoptantes) */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-emerald-50/70 border border-emerald-200/90 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-200/60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center shadow-sm shrink-0">
+                      <UserCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-stone-900 text-sm">{adopter?.nombre_apellido || 'Adoptante'}</h4>
-                      <p className="text-xs text-stone-500">Adoptado el {formatDate(adoption.fecha_entrega)}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Ficha Oficial del Adoptante
+                        </span>
+                      </div>
+                      <h4 className="font-extrabold text-stone-900 text-base sm:text-lg mt-0.5">
+                        {adopter?.nombre_apellido || 'Adoptante Registrado/a'}
+                      </h4>
                     </div>
                   </div>
 
@@ -661,7 +835,8 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                       href={getWhatsappLink(adopter.telefono_whatsapp, getWhatsappTemplate({ adoptanteNombre: adopter.nombre_apellido, animalNombre: animal.nombre_actual }))}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-colors self-start sm:self-auto"
+                      title="Enviar WhatsApp de Seguimiento"
                     >
                       <Phone className="w-3.5 h-3.5" />
                       <span>WhatsApp Seguimiento</span>
@@ -669,28 +844,91 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
-                  <div>
-                    <span className="text-stone-400 block text-[11px]">Modalidad</span>
-                    <span className="font-semibold text-stone-800">{adoption.modalidad_entrega}</span>
+                {adopter && (
+                  <div className="space-y-3 text-xs">
+                    {/* DNI, Fechas y Estado */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canSeeSensitive ? (
+                        <span className="text-xs text-stone-700 font-semibold bg-white border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-xs">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          DNI: {formatDNI(adopter.dni_cuit)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-stone-500 font-medium bg-white border border-stone-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-xs">
+                          <Lock className="w-3.5 h-3.5 text-amber-600" />
+                          DNI Protegido (Ley 25.326)
+                        </span>
+                      )}
+
+                      <span className="text-xs text-stone-600 bg-white border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-xs">
+                        <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                        Fecha de Entrega: {formatDate(adoption.fecha_entrega)}
+                      </span>
+
+                      <Badge variant={adoption.estado_adopcion === 'adopción consolidada' ? 'success' : 'primary'}>
+                        {adoption.estado_adopcion}
+                      </Badge>
+                    </div>
+
+                    {/* Datos de contacto y vivienda */}
+                    <div className="p-3.5 rounded-2xl bg-white border border-emerald-200/70 space-y-2 text-stone-700">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-semibold">{adopter.telefono_whatsapp}</span>
+                        {adopter.telefono_secundario && <span className="text-stone-400">/ {adopter.telefono_secundario}</span>}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        {canSeeSensitive ? (
+                          <span>
+                            {adopter.direccion_calle} {adopter.direccion_numero} {adopter.direccion_piso_depto} ({adopter.direccion_barrio || adopter.direccion_localidad})
+                          </span>
+                        ) : (
+                          <span className="text-stone-500">
+                            {adopter.direccion_barrio || adopter.direccion_localidad} (Calle exacta protegida por Ley 25.326)
+                          </span>
+                        )}
+                      </div>
+
+                      {adopter.tipo_vivienda && (
+                        <div className="flex items-center gap-2">
+                          <Home className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="capitalize">{adopter.tipo_vivienda} ({adopter.condicion_vivienda || 'convivencia familiar'})</span>
+                        </div>
+                      )}
+
+                      {adopter.redes_sociales?.instagram && (
+                        <div className="flex items-center gap-2 text-stone-500">
+                          <Globe className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          <span>{adopter.redes_sociales.instagram}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Parámetros del Acta y Compromiso */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                      <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                        <span className="text-stone-400 block text-[11px] font-medium">Modalidad de Entrega</span>
+                        <span className="font-bold text-stone-800 capitalize">{adoption.modalidad_entrega || 'Domicilio'}</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                        <span className="text-stone-400 block text-[11px] font-medium">Período Adaptación</span>
+                        <span className="font-bold text-stone-800">{adoption.periodo_adaptacion_dias || 21} días</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                        <span className="text-stone-400 block text-[11px] font-medium">Castración</span>
+                        <span className="font-bold text-stone-800">
+                          {adoption.compromiso_castracion ? `Sí (hasta ${formatDate(adoption.fecha_limite_castracion)})` : 'Realizada'}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white border border-emerald-100">
+                        <span className="text-stone-400 block text-[11px] font-medium">Ley 25.326</span>
+                        <span className="font-bold text-emerald-700">✓ Aceptado</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-stone-400 block text-[11px]">Período Adaptación</span>
-                    <span className="font-semibold text-stone-800">{adoption.periodo_adaptacion_dias} días</span>
-                  </div>
-                  <div>
-                    <span className="text-stone-400 block text-[11px]">Castración</span>
-                    <span className="font-semibold text-stone-800">
-                      {adoption.compromiso_castracion ? `Sí (hasta ${formatDate(adoption.fecha_limite_castracion)})` : 'Realizada'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-stone-400 block text-[11px]">Estado</span>
-                    <Badge variant={adoption.estado_adopcion === 'adopción consolidada' ? 'success' : 'primary'}>
-                      {adoption.estado_adopcion}
-                    </Badge>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Bitácora de Seguimientos (Línea de tiempo) */}
