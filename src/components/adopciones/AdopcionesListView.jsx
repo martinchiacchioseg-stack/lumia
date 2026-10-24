@@ -3,9 +3,19 @@ import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { ModalNuevaAdopcion } from './ModalNuevaAdopcion';
 import { ModalWhatsApp } from '../adoptantes/ModalWhatsApp';
+import { SmartCameraInput } from '../common/SmartCameraInput';
 import { Badge } from '../common/Badge';
 import { formatDate } from '../../lib/formatters';
 import { HeartHandshake, Plus, Calendar, Phone, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+
+const ADOPCION_SCHEMA = [
+  { name: 'fecha_entrega', label: 'Fecha de entrega', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'modalidad_entrega', label: 'Modalidad de entrega', type: 'select', options: ['llevado al domicilio', 'retirado por el adoptante'] },
+  { name: 'periodo_adaptacion_dias', label: 'Días de período de adaptación', type: 'number', context: 'Cantidad de días de adaptación' },
+  { name: 'compromiso_castracion', label: 'Compromiso de castración firmado', type: 'boolean' },
+  { name: 'fecha_limite_castracion', label: 'Fecha límite de castración', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'observaciones', label: 'Observaciones y acuerdos', type: 'string' }
+];
 
 export function AdopcionesListView({ onSelectAnimal }) {
   const { adopciones, animales, adoptantes, seguimientos } = useData();
@@ -42,13 +52,23 @@ export function AdopcionesListView({ onSelectAnimal }) {
         </div>
 
         {hasPermission('adopciones', 'crear') && (
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="px-4 py-2.5 rounded-2xl bg-patita-600 hover:bg-patita-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-patita-600/30 flex items-center justify-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Concretar Nueva Adopción</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <SmartCameraInput
+              schema={ADOPCION_SCHEMA}
+              formTitle="Nueva Adopción"
+              buttonText="Escanear Acta con IA"
+              onScanComplete={() => {
+                setShowNewModal(true);
+              }}
+            />
+            <button
+              onClick={() => setShowNewModal(true)}
+              className="px-4 py-2.5 rounded-2xl bg-patita-600 hover:bg-patita-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-patita-600/30 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Concretar Nueva Adopción</span>
+            </button>
+          </div>
         )}
       </div>
 

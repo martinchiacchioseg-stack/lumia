@@ -126,8 +126,8 @@ export function SmartCameraInput({
           disabled={isScanning || disabled}
           className={`group px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
             isScanning
-              ? 'bg-amber-50 border-amber-300 text-amber-900 cursor-wait'
-              : 'bg-lumia-50 hover:bg-lumia-100 border-lumia-300 text-lumia-800 hover:text-lumia-900 shadow-sm'
+              ? 'bg-amber-50 border-amber-400 text-amber-900 cursor-wait ring-2 ring-amber-200'
+              : 'bg-gradient-to-r from-lumia-50 to-amber-50 hover:from-lumia-100 hover:to-amber-100 border-lumia-400 text-lumia-900 font-extrabold shadow-sm hover:shadow-md'
           }`}
           title="Autocompletar campos automáticamente con una foto de ticket, receta o documento"
         >
@@ -139,9 +139,9 @@ export function SmartCameraInput({
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5 text-lumia-600 group-hover:scale-110 transition-transform" />
-              <Camera className="w-3.5 h-3.5 text-stone-700" />
+              <Camera className="w-3.5 h-3.5 text-lumia-700" />
               <span>{buttonText}</span>
-              <ChevronDown className="w-3 h-3 text-stone-400 group-hover:text-stone-600 transition-transform" />
+              <ChevronDown className="w-3 h-3 text-lumia-500 group-hover:text-lumia-800 transition-transform" />
             </>
           )}
         </button>
@@ -151,39 +151,40 @@ export function SmartCameraInput({
       {showOptions && !isScanning && (
         <>
           <div
-            className="fixed inset-0 z-30"
+            className="fixed inset-0 z-40"
             onClick={() => setShowOptions(false)}
           />
-          <div className="absolute right-0 sm:left-0 top-full mt-1.5 z-40 w-56 rounded-2xl bg-white border border-stone-200 shadow-xl p-1.5 space-y-1 animate-in fade-in zoom-in-95 text-xs">
-            <div className="px-2.5 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider border-b border-stone-100">
-              Completar con foto o documento
+          <div className="absolute right-0 sm:right-auto sm:left-0 top-full mt-1.5 z-50 w-60 rounded-2xl bg-white border border-stone-200 shadow-2xl p-2 space-y-1.5 animate-in fade-in zoom-in-95 text-xs">
+            <div className="px-2.5 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider border-b border-stone-100 flex items-center justify-between">
+              <span>Autocompletar con IA</span>
+              <Sparkles className="w-3 h-3 text-lumia-500" />
             </div>
 
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-lumia-50 text-stone-800 font-semibold flex items-center gap-2 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-xl hover:bg-lumia-50 text-stone-800 font-semibold flex items-center gap-2.5 transition-colors border border-transparent hover:border-lumia-200"
             >
-              <div className="w-6 h-6 rounded-lg bg-lumia-100 text-lumia-700 flex items-center justify-center shrink-0">
-                <Camera className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 rounded-lg bg-lumia-100 text-lumia-700 flex items-center justify-center shrink-0">
+                <Camera className="w-4 h-4" />
               </div>
               <div>
-                <span className="block font-bold">Tomar foto</span>
-                <span className="text-[10px] text-stone-400 font-normal">Abrir cámara trasera</span>
+                <span className="block font-bold text-stone-900">Tomar foto</span>
+                <span className="text-[10px] text-stone-500 font-normal">Abrir cámara trasera del móvil</span>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
-              className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-lumia-50 text-stone-800 font-semibold flex items-center gap-2 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-xl hover:bg-stone-50 text-stone-800 font-semibold flex items-center gap-2.5 transition-colors border border-transparent hover:border-stone-200"
             >
-              <div className="w-6 h-6 rounded-lg bg-stone-100 text-stone-600 flex items-center justify-center shrink-0">
-                <Upload className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 rounded-lg bg-stone-100 text-stone-600 flex items-center justify-center shrink-0">
+                <Upload className="w-4 h-4" />
               </div>
               <div>
-                <span className="block font-bold">Subir imagen</span>
-                <span className="text-[10px] text-stone-400 font-normal">Galería o archivo PC</span>
+                <span className="block font-bold text-stone-900">Subir imagen</span>
+                <span className="text-[10px] text-stone-500 font-normal">Galería o archivo del dispositivo</span>
               </div>
             </button>
           </div>

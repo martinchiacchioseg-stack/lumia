@@ -117,7 +117,11 @@ function MainApp() {
         {currentView === 'animales' && (
           <AnimalesListView
             onSelectAnimal={(animal) => setSelectedAnimal(animal)}
-            onOpenNewAnimal={() => { setEditingAnimal(null); setShowNewAnimalModal(true); }}
+            onOpenNewAnimal={(prefill) => {
+              setEditingAnimal(prefill && typeof prefill === 'object' && !prefill.nativeEvent ? prefill : null);
+              setShowNewAnimalModal(true);
+            }}
+            onEditAnimal={handleEditAnimal}
           />
         )}
 

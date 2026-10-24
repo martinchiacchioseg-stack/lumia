@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
 import { SmartCameraInput } from '../common/SmartCameraInput';
@@ -47,6 +47,57 @@ export function ModalNuevoAdoptante({ isOpen, onClose, initialData = null }) {
     consentimiento_datos: true,
     ...(initialData || {})
   });
+
+  // Sincronizar datos al abrir para editar
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData({
+          nombre_apellido: initialData.nombre_apellido || '',
+          dni_cuit: initialData.dni_cuit || '',
+          telefono_whatsapp: initialData.telefono_whatsapp || '',
+          telefono_secundario: initialData.telefono_secundario || '',
+          direccion_calle: initialData.direccion_calle || '',
+          direccion_numero: initialData.direccion_numero || '',
+          direccion_entrecalles: initialData.direccion_entrecalles || '',
+          direccion_piso_depto: initialData.direccion_piso_depto || '',
+          direccion_barrio: initialData.direccion_barrio || '',
+          direccion_localidad: initialData.direccion_localidad || 'CABA',
+          direccion_provincia: initialData.direccion_provincia || 'Buenos Aires',
+          tipo_vivienda: initialData.tipo_vivienda || 'departamento',
+          condicion_vivienda: initialData.condicion_vivienda || 'propietario',
+          redes_instagram: initialData.redes_sociales?.instagram || initialData.redes_instagram || '',
+          redes_facebook: initialData.redes_sociales?.facebook || initialData.redes_facebook || '',
+          foto_dni_frente: initialData.foto_dni_frente || '',
+          foto_dni_dorso: initialData.foto_dni_dorso || '',
+          consentimiento_datos: initialData.consentimiento_datos !== false,
+          ...initialData
+        });
+      } else {
+        setFormData({
+          nombre_apellido: '',
+          dni_cuit: '',
+          telefono_whatsapp: '',
+          telefono_secundario: '',
+          direccion_calle: '',
+          direccion_numero: '',
+          direccion_entrecalles: '',
+          direccion_piso_depto: '',
+          direccion_barrio: '',
+          direccion_localidad: 'CABA',
+          direccion_provincia: 'Buenos Aires',
+          tipo_vivienda: 'departamento',
+          condicion_vivienda: 'propietario',
+          redes_instagram: '',
+          redes_facebook: '',
+          foto_dni_frente: '',
+          foto_dni_dorso: '',
+          consentimiento_datos: true
+        });
+      }
+      setAiFilledFields([]);
+    }
+  }, [isOpen, initialData]);
 
   const handleAIScanComplete = (extractedData, filledKeys) => {
     setFormData(prev => ({ ...prev, ...extractedData }));

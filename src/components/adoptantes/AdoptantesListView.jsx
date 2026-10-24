@@ -3,6 +3,7 @@ import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { ModalNuevoAdoptante } from './ModalNuevoAdoptante';
 import { ModalWhatsApp } from './ModalWhatsApp';
+import { SmartCameraInput } from '../common/SmartCameraInput';
 import { Badge } from '../common/Badge';
 import { formatDate, formatDNI } from '../../lib/formatters';
 import { 
@@ -20,6 +21,21 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+
+const ADOPTANTE_SCHEMA = [
+  { name: 'nombre_apellido', label: 'Nombre y Apellido completo', type: 'string', context: 'Titular de la adopción según DNI o formulario' },
+  { name: 'dni_cuit', label: 'Número de DNI o CUIT', type: 'string', context: '8 u 11 dígitos, sin puntos' },
+  { name: 'telefono_whatsapp', label: 'Teléfono celular / WhatsApp', type: 'string' },
+  { name: 'telefono_secundario', label: 'Teléfono secundario o de línea', type: 'string' },
+  { name: 'direccion_calle', label: 'Calle', type: 'string' },
+  { name: 'direccion_numero', label: 'Altura / Número de calle', type: 'string' },
+  { name: 'direccion_piso_depto', label: 'Piso y Departamento', type: 'string' },
+  { name: 'direccion_barrio', label: 'Barrio', type: 'string' },
+  { name: 'direccion_localidad', label: 'Localidad o Ciudad', type: 'string' },
+  { name: 'direccion_provincia', label: 'Provincia', type: 'string' },
+  { name: 'tipo_vivienda', label: 'Tipo de vivienda', type: 'select', options: ['departamento', 'casa con patio cerrado', 'casa con patio abierto', 'ph', 'quinta/campo'] },
+  { name: 'condicion_vivienda', label: 'Condición de vivienda', type: 'select', options: ['propietario', 'inquilino'] }
+];
 
 export function AdoptantesListView() {
   const { adoptantes, adopciones, animales } = useData();
@@ -73,13 +89,24 @@ export function AdoptantesListView() {
         </div>
 
         {hasPermission('adoptantes', 'crear') && (
-          <button
-            onClick={() => { setEditingAdoptante(null); setShowNewModal(true); }}
-            className="px-4 py-2.5 rounded-2xl bg-patita-600 hover:bg-patita-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-patita-600/30 flex items-center justify-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Adoptante</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <SmartCameraInput
+              schema={ADOPTANTE_SCHEMA}
+              formTitle="Nuevo Adoptante"
+              buttonText="Escanear DNI con IA"
+              onScanComplete={(extractedData) => {
+                setEditingAdoptante(extractedData);
+                setShowNewModal(true);
+              }}
+            />
+            <button
+              onClick={() => { setEditingAdoptante(null); setShowNewModal(true); }}
+              className="px-4 py-2.5 rounded-2xl bg-patita-600 hover:bg-patita-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-patita-600/30 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Adoptante</span>
+            </button>
+          </div>
         )}
       </div>
 

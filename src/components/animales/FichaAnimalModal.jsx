@@ -39,6 +39,25 @@ import {
   HeartHandshake
 } from 'lucide-react';
 
+const ANIMAL_SCHEMA = [
+  { name: 'nombre_actual', label: 'Nombre actual del animal', type: 'string', context: 'Nombre asignado o que responde' },
+  { name: 'nombre_anterior_apodo', label: 'Apodo o nombre anterior', type: 'string' },
+  { name: 'especie', label: 'Especie', type: 'select', options: ['perro', 'gato'], context: 'Especie canina o felina' },
+  { name: 'sexo', label: 'Sexo', type: 'select', options: ['macho', 'hembra'] },
+  { name: 'edad_estimada', label: 'Edad aproximada', type: 'select', options: ['cachorro', 'joven', 'adulto', 'geronte'] },
+  { name: 'tamano', label: 'Tamaño', type: 'select', options: ['chico', 'mediano', 'grande', 'gigante'] },
+  { name: 'pelaje_color_senas_particulares', label: 'Pelaje y señas particulares', type: 'string', context: 'Color, manchas, tipo de pelo, cicatrices' },
+  { name: 'fecha_rescate', label: 'Fecha de rescate', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'ubicacion_rescate', label: 'Lugar de rescate', type: 'string', context: 'Barrio, calle o localidad donde fue encontrado' },
+  { name: 'relacion_con_perros', label: 'Convivencia con otros perros', type: 'string' },
+  { name: 'relacion_con_gatos', label: 'Convivencia con gatos', type: 'string' },
+  { name: 'relacion_con_personas', label: 'Relación con personas y niños', type: 'string' },
+  { name: 'nivel_energia', label: 'Nivel de energía', type: 'select', options: ['tranquilo', 'moderado', 'alto'] },
+  { name: 'manejo_correa_paseos', label: 'Manejo de correa y paseos', type: 'string' },
+  { name: 'notas_conducta', label: 'Notas de conducta y temperamento', type: 'string' },
+  { name: 'alimentacion_recomendada', label: 'Alimentación recomendada', type: 'string' }
+];
+
 const HEALTH_SCHEMA = [
   { 
     name: 'tipo_evento', 
@@ -261,6 +280,18 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             </button>
           )}
 
+          {hasPermission('animales', 'editar') && (
+            <SmartCameraInput
+              schema={ANIMAL_SCHEMA}
+              formTitle={`Ficha de ${animal.nombre_actual}`}
+              buttonText="Escanear Cartilla"
+              className="w-full sm:w-auto"
+              onScanComplete={(extractedData) => {
+                updateAnimal(animal.id, extractedData);
+              }}
+            />
+          )}
+
           <button
             onClick={handleDownloadOfficialPdf}
             disabled={isGeneratingPdf}
@@ -357,15 +388,25 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {hasPermission('animales', 'editar') && (
-                    <button
-                      onClick={() => onEditAnimal && onEditAnimal(animal)}
-                      className="px-3 py-1.5 rounded-xl bg-lumia-500 hover:bg-lumia-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm shadow-lumia-500/20"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Editar</span>
-                    </button>
+                    <>
+                      <SmartCameraInput
+                        schema={ANIMAL_SCHEMA}
+                        formTitle={`Ficha de ${animal.nombre_actual}`}
+                        buttonText="Completar con Foto"
+                        onScanComplete={(extractedData) => {
+                          updateAnimal(animal.id, extractedData);
+                        }}
+                      />
+                      <button
+                        onClick={() => onEditAnimal && onEditAnimal(animal)}
+                        className="px-3 py-1.5 rounded-xl bg-lumia-500 hover:bg-lumia-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm shadow-lumia-500/20"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Editar Formulario</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

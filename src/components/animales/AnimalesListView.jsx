@@ -4,10 +4,33 @@ import { usePermissions } from '../../context/PermissionsContext';
 import { Badge } from '../common/Badge';
 import { formatDate } from '../../lib/formatters';
 import { ModalFlyerRedes } from './ModalFlyerRedes';
-import { Search, Plus, Filter, Dog, Cat, MapPin, Calendar, Heart, Share2, ExternalLink, Sparkles } from 'lucide-react';
+import { SmartCameraInput } from '../common/SmartCameraInput';
+import { Search, Plus, Filter, Dog, Cat, MapPin, Calendar, Heart, Share2, ExternalLink, Sparkles, Edit3 } from 'lucide-react';
 
-export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
-  const { animales } = useData();
+const ANIMAL_SCHEMA = [
+  { name: 'nombre_actual', label: 'Nombre actual del animal', type: 'string', context: 'Nombre asignado o que responde' },
+  { name: 'nombre_anterior_apodo', label: 'Apodo o nombre anterior', type: 'string' },
+  { name: 'especie', label: 'Especie', type: 'select', options: ['perro', 'gato'], context: 'Especie canina o felina' },
+  { name: 'sexo', label: 'Sexo', type: 'select', options: ['macho', 'hembra'] },
+  { name: 'edad_estimada', label: 'Edad aproximada', type: 'select', options: ['cachorro', 'joven', 'adulto', 'geronte'] },
+  { name: 'tamano', label: 'Tamaño', type: 'select', options: ['chico', 'mediano', 'grande', 'gigante'] },
+  { name: 'pelaje_color_senas_particulares', label: 'Pelaje y señas particulares', type: 'string', context: 'Color, manchas, tipo de pelo, cicatrices' },
+  { name: 'fecha_rescate', label: 'Fecha de rescate', type: 'date', context: 'Formato YYYY-MM-DD' },
+  { name: 'ubicacion_rescate', label: 'Lugar de rescate', type: 'string', context: 'Barrio, calle o localidad donde fue encontrado' },
+  { name: 'transito_nombre', label: 'Responsable del hogar de tránsito', type: 'string' },
+  { name: 'transito_telefono', label: 'Teléfono de contacto de tránsito', type: 'string' },
+  { name: 'transito_direccion', label: 'Dirección de tránsito', type: 'string' },
+  { name: 'relacion_con_perros', label: 'Convivencia con otros perros', type: 'string' },
+  { name: 'relacion_con_gatos', label: 'Convivencia con gatos', type: 'string' },
+  { name: 'relacion_con_personas', label: 'Relación con personas y niños', type: 'string' },
+  { name: 'nivel_energia', label: 'Nivel de energía', type: 'select', options: ['tranquilo', 'moderado', 'alto'] },
+  { name: 'manejo_correa_paseos', label: 'Manejo de correa y paseos', type: 'string' },
+  { name: 'notas_conducta', label: 'Notas de conducta y temperamento', type: 'string' },
+  { name: 'alimentacion_recomendada', label: 'Alimentación recomendada', type: 'string' }
+];
+
+export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal, onEditAnimal }) {
+  const { animales, addAnimal } = useData();
   const { hasPermission } = usePermissions();
 
   const [search, setSearch] = useState('');
@@ -56,13 +79,28 @@ export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
           </a>
 
           {hasPermission('animales', 'crear') && (
-            <button
-              onClick={onOpenNewAnimal}
-              className="px-4 py-2.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-lumia-500/30 flex items-center justify-center gap-1.5 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo Rescate</span>
-            </button>
+            <>
+              <SmartCameraInput
+                schema={ANIMAL_SCHEMA}
+                formTitle="Nuevo Rescate"
+                buttonText="Escanear con IA"
+                onScanComplete={(extractedData) => {
+                  if (onOpenNewAnimal) {
+                    onOpenNewAnimal(extractedData);
+                  } else {
+                    addAnimal(extractedData);
+                  }
+                }}
+              />
+
+              <button
+                onClick={onOpenNewAnimal}
+                className="px-4 py-2.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-lumia-500/30 flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nuevo Rescate</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -181,18 +219,39 @@ export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
                     <Calendar className="w-3.5 h-3.5 text-stone-400" />
                     <span>Rescate: {formatDate(animal.fecha_rescate)}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFlyerAnimal(animal);
-                    }}
-                    className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] flex items-center gap-1 transition-colors shadow-sm"
-                    title="Generar Flyer personalizado para Redes Sociales"
-                  >
-                    <Share2 className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Flyer</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {hasPermission('animales', 'editar') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onEditAnimal) {
+                            onEditAnimal(animal);
+                          } else if (onSelectAnimal) {
+                            onSelectAnimal(animal);
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-lumia-50 hover:bg-lumia-100 text-lumia-800 border border-lumia-300 font-bold text-[11px] flex items-center gap-1 transition-colors shadow-xs"
+                        title="Editar ficha del animal"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-lumia-600" />
+                        <span>Editar</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFlyerAnimal(animal);
+                      }}
+                      className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] flex items-center gap-1 transition-colors shadow-xs"
+                      title="Generar Flyer personalizado para Redes Sociales"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Flyer</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

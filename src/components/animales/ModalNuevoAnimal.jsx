@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
 import { SmartCameraInput } from '../common/SmartCameraInput';
@@ -60,6 +60,64 @@ export function ModalNuevoAnimal({ isOpen, onClose, initialData = null }) {
     foto_portada: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
     ...(initialData || {})
   });
+
+  // Sincronizar datos al abrir para editar
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData({
+          nombre_actual: initialData.nombre_actual || '',
+          nombre_anterior_apodo: initialData.nombre_anterior_apodo || '',
+          especie: initialData.especie || 'perro',
+          sexo: initialData.sexo || 'hembra',
+          edad_estimada: initialData.edad_estimada || 'joven',
+          tamano: initialData.tamano || 'mediano',
+          pelaje_color_senas_particulares: initialData.pelaje_color_senas_particulares || '',
+          estado_caso: initialData.estado_caso || 'rescatado',
+          fecha_rescate: initialData.fecha_rescate ? String(initialData.fecha_rescate).split('T')[0] : new Date().toISOString().split('T')[0],
+          ubicacion_rescate: initialData.ubicacion_rescate || '',
+          transito_nombre: initialData.transito_previo?.nombre || '',
+          transito_telefono: initialData.transito_previo?.telefono || '',
+          transito_direccion: initialData.transito_previo?.direccion || '',
+          relacion_con_perros: initialData.relacion_con_perros || 'Sociable',
+          relacion_con_gatos: initialData.relacion_con_gatos || 'A evaluar',
+          relacion_con_personas: initialData.relacion_con_personas || 'Cariñoso/a',
+          nivel_energia: initialData.nivel_energia || 'moderado',
+          manejo_correa_paseos: initialData.manejo_correa_paseos || 'Bueno',
+          notas_conducta: initialData.notas_conducta || '',
+          alimentacion_recomendada: initialData.alimentacion_recomendada || 'Alimento premium balanceado acorde a tamaño y peso.',
+          foto_portada: initialData.foto_portada || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80',
+          ...initialData
+        });
+      } else {
+        setFormData({
+          nombre_actual: '',
+          nombre_anterior_apodo: '',
+          especie: 'perro',
+          sexo: 'hembra',
+          edad_estimada: 'joven',
+          tamano: 'mediano',
+          pelaje_color_senas_particulares: '',
+          estado_caso: 'rescatado',
+          fecha_rescate: new Date().toISOString().split('T')[0],
+          ubicacion_rescate: '',
+          transito_nombre: '',
+          transito_telefono: '',
+          transito_direccion: '',
+          relacion_con_perros: 'Sociable',
+          relacion_con_gatos: 'A evaluar',
+          relacion_con_personas: 'Cariñoso/a',
+          nivel_energia: 'moderado',
+          manejo_correa_paseos: 'Bueno',
+          notas_conducta: '',
+          alimentacion_recomendada: 'Alimento premium balanceado acorde a tamaño y peso.',
+          foto_portada: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80'
+        });
+      }
+      setActiveStep(1);
+      setAiFilledFields([]);
+    }
+  }, [isOpen, initialData]);
 
   const handleAIScanComplete = (extractedData, filledKeys) => {
     setFormData(prev => ({ ...prev, ...extractedData }));
