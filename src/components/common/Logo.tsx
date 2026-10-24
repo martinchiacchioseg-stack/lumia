@@ -4,7 +4,7 @@ import { Logo as LogoJsx } from './Logo.jsx';
 export interface LogoProps {
   variant?: 'full' | 'mini-lumia' | 'mini-text' | 'icon-only';
   background?: 'transparent' | 'white';
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
   alt?: string;
   priority?: boolean;

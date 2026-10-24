@@ -35,19 +35,19 @@ export function LoginView() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-lumia-50 via-stone-50 to-stone-100 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div className="min-h-screen bg-gradient-to-b from-lumia-50 via-stone-50 to-stone-100 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center">
         {/* Logo Oficial LUMIA con subtítulo bold grande y legible */}
-        <div className="flex justify-center mb-2">
+        <div className="flex justify-center mb-3">
           <Logo
             variant="full"
             background="transparent"
-            size="xl"
-            className="h-28 w-auto max-w-[280px]"
+            size="2xl"
+            className="h-40 sm:h-52 md:h-60 w-auto max-w-[380px] sm:max-w-[480px] object-contain drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
             priority={true}
           />
         </div>
-        <p className="mt-2 text-xs font-semibold text-stone-500 uppercase tracking-wider">
+        <p className="mt-3 text-xs sm:text-sm md:text-base font-bold text-stone-600 uppercase tracking-widest">
           Sistema Nacional de Gestión para Rescatistas
         </p>
       </div>

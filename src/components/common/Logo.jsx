@@ -28,6 +28,7 @@ export function Logo({
     md: variant === 'icon-only' ? 'w-10 h-10' : 'h-11 sm:h-12',
     lg: variant === 'icon-only' ? 'w-16 h-16' : 'h-16 sm:h-20',
     xl: variant === 'icon-only' ? 'w-24 h-24' : 'h-24 sm:h-28',
+    '2xl': variant === 'icon-only' ? 'w-36 h-36' : 'h-40 sm:h-52 md:h-60',
   };
 
   const bgClasses = background === 'white' ? 'bg-white p-2 rounded-2xl shadow-sm' : '';
