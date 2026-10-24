@@ -9,7 +9,8 @@ import {
   INITIAL_STREET_REPORTS,
   INITIAL_AUDIT_LOGS,
   INITIAL_NEWS,
-  INITIAL_SYSTEM_MESSAGES
+  INITIAL_SYSTEM_MESSAGES,
+  INITIAL_PORTAL_CONFIG
 } from '../lib/seedData';
 
 const DataContext = createContext(null);
@@ -63,6 +64,11 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_SYSTEM_MESSAGES;
   });
 
+  const [configPortal, setConfigPortal] = useState(() => {
+    const saved = localStorage.getItem('patita_config_portal');
+    return saved ? JSON.parse(saved) : INITIAL_PORTAL_CONFIG;
+  });
+
   // Guardar en localStorage
   useEffect(() => { localStorage.setItem('patita_animales', JSON.stringify(animales)); }, [animales]);
   useEffect(() => { localStorage.setItem('patita_adoptantes', JSON.stringify(adoptantes)); }, [adoptantes]);
@@ -73,6 +79,7 @@ export function DataProvider({ children }) {
   useEffect(() => { localStorage.setItem('patita_auditoria', JSON.stringify(auditoria)); }, [auditoria]);
   useEffect(() => { localStorage.setItem('patita_noticias', JSON.stringify(noticias)); }, [noticias]);
   useEffect(() => { localStorage.setItem('patita_mensajes_sistema', JSON.stringify(mensajesSistema)); }, [mensajesSistema]);
+  useEffect(() => { localStorage.setItem('patita_config_portal', JSON.stringify(configPortal)); }, [configPortal]);
 
   /**
    * Registrar evento en la bitácora de auditoría
@@ -404,6 +411,28 @@ export function DataProvider({ children }) {
     logAudit('Eliminación de noticia', 'noticias', found?.titulo || id);
   };
 
+  const toggleNoticiaPublicada = (id) => {
+    setNoticias(prev => prev.map(n => {
+      if (n.id === id) {
+        const nuevoEstado = !n.publicado;
+        logAudit(nuevoEstado ? 'Publicación de noticia en portal' : 'Despublicación de noticia del portal', 'noticias', n.titulo);
+        return { ...n, publicado: nuevoEstado };
+      }
+      return n;
+    }));
+  };
+
+  /**
+   * Configuración del Portal Público (Superadministrador)
+   */
+  const updateConfigPortal = (newConfig) => {
+    setConfigPortal(prev => {
+      const updated = { ...prev, ...newConfig, updated_at: new Date().toISOString() };
+      logAudit('Actualización de configuración del portal público', 'configuracion', 'Portal Público');
+      return updated;
+    });
+  };
+
   /**
    * Gestión de Mensajes Oficiales del Sistema (Superadmin a Administrador)
    */
@@ -450,6 +479,7 @@ export function DataProvider({ children }) {
         auditoria,
         noticias,
         mensajesSistema,
+        configPortal,
         addAnimal,
         updateAnimal,
         archiveAnimal,
@@ -471,6 +501,8 @@ export function DataProvider({ children }) {
         addNoticia,
         updateNoticia,
         deleteNoticia,
+        toggleNoticiaPublicada,
+        updateConfigPortal,
         addMensajeSistema,
         marcarMensajeLeido,
         deleteMensajeSistema,

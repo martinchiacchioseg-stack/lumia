@@ -23,6 +23,7 @@ import { EstadisticasView } from './components/estadisticas/EstadisticasView';
 import { DossierFuncionesView } from './components/public/DossierFuncionesView';
 import { PortalAdopcionesView } from './components/public/PortalAdopcionesView';
 import { MensajesSistemaView } from './components/mensajes/MensajesSistemaView';
+import { PanelSuperadminView } from './components/superadmin/PanelSuperadminView';
 
 // Modales Globales
 import { ModalNuevoAnimal } from './components/animales/ModalNuevoAnimal';
@@ -150,6 +151,10 @@ function MainApp() {
 
         {currentView === 'mensajes' && (
           <MensajesSistemaView />
+        )}
+
+        {currentView === 'panel_superadmin' && (
+          <PanelSuperadminView />
         )}
 
         {currentView === 'import_export' && (

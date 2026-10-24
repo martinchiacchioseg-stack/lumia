@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { useData } from '../../context/DataContext';
 import { Modal } from '../common/Modal';
 import { Logo } from '../common/Logo';
 import { 
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export function ModalFlyerRedes({ isOpen, onClose, animal }) {
+  const { configPortal } = useData();
   const flyerRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
@@ -27,9 +29,9 @@ export function ModalFlyerRedes({ isOpen, onClose, animal }) {
   const [formato, setFormato] = useState('cuadrado'); // 'cuadrado' | 'stories'
   const [titulo, setTitulo] = useState('¡EN ADOPCIÓN RESPONSABLE!');
   const [subtitulo, setSubtitulo] = useState('Busco una familia que me ame para siempre');
-  const [contactoNombre, setContactoNombre] = useState('Génesis (Rescatista a Cargo)');
-  const [contactoTelefono, setContactoTelefono] = useState('+54 9 11 9988-7766');
-  const [zona, setZona] = useState(animal?.ubicacion_rescate || 'CABA / Gran Buenos Aires');
+  const [contactoNombre, setContactoNombre] = useState(configPortal?.nombre_guardia || 'Génesis (Rescatista a Cargo)');
+  const [contactoTelefono, setContactoTelefono] = useState(configPortal?.telefono_guardia || '+54 9 11 9988-7766');
+  const [zona, setZona] = useState(animal?.ubicacion_rescate || configPortal?.zona_cobertura || 'CABA / Gran Buenos Aires');
   const [mostrarSalud, setMostrarSalud] = useState(true);
   const [requisitoTexto, setRequisitoTexto] = useState('Compromiso de seguimiento y cuidados veterinarios.');
 

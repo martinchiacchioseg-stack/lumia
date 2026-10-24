@@ -59,6 +59,22 @@ export function Header({ currentView, setCurrentView }) {
 
             {/* Acciones y Perfil */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Opción EXCLUSIVA Superadministrador: Panel Superadmin */}
+              {isSuperadmin && (
+                <button
+                  onClick={() => setCurrentView('panel_superadmin')}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                    currentView === 'panel_superadmin'
+                      ? 'bg-lumia-500 text-white shadow-lumia-500/25 ring-2 ring-lumia-600'
+                      : 'bg-stone-900 hover:bg-stone-800 text-white'
+                  }`}
+                  title="Panel de Control Superadmin (Noticias y Teléfono del Portal)"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-lumia-400 shrink-0" />
+                  <span className="hidden md:inline">Panel Superadmin</span>
+                </button>
+              )}
+
               {/* Opción EXCLUSIVA Superadministrador: Compartir Link de Funciones */}
               {isSuperadmin && (
                 <button

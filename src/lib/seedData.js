@@ -476,3 +476,12 @@ export const INITIAL_SYSTEM_MESSAGES = [
     ]
   }
 ];
+
+export const INITIAL_PORTAL_CONFIG = {
+  telefono_guardia: '+54 9 11 9988-7766',
+  telefono_whatsapp: '5491199887766',
+  nombre_guardia: 'Guardia y Rescate LUMIA',
+  email_contacto: 'contacto@patitaaliada.org.ar',
+  zona_cobertura: 'Buenos Aires, Argentina',
+  mensaje_bienvenida: 'Ellos esperan una segunda oportunidad'
+};

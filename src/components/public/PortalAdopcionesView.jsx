@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export function PortalAdopcionesView({ onBackToApp }) {
-  const { animales, noticias, addNoticia, addAdoptante } = useData();
+  const { animales, noticias, addNoticia, addAdoptante, configPortal } = useData();
   const { currentUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('adopciones'); // 'adopciones' | 'noticias'
@@ -130,7 +130,7 @@ export function PortalAdopcionesView({ onBackToApp }) {
   };
 
   const handleConsultarWhatsAppAnimal = (animal) => {
-    const phone = '5491199887766'; // Teléfono oficial de guardia
+    const phone = configPortal?.telefono_whatsapp || '5491199887766'; // Teléfono oficial de guardia configurado
     const text = encodeURIComponent(
       `¡Hola! Estoy en el Portal de Adopciones LUMIA y me gustaría consultar por ${animal.nombre_actual} (código ${animal.codigo_interno}). ¿Sigue disponible para adopción?`
     );
@@ -223,7 +223,7 @@ export function PortalAdopcionesView({ onBackToApp }) {
             Portal Oficial de Adopciones Responsables y Noticias
           </p>
           <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight mb-2">
-            Ellos esperan una segunda oportunidad
+            {configPortal?.mensaje_bienvenida || 'Ellos esperan una segunda oportunidad'}
           </h1>
           <p className="text-xs sm:text-sm text-stone-600 max-w-xl mx-auto">
             Todos nuestros animales se entregan vacunados, desparasitados y con compromiso de castración 
@@ -423,9 +423,14 @@ export function PortalAdopcionesView({ onBackToApp }) {
               </div>
             )}
 
-            {/* Listado de Noticias */}
+            {/* Listado de Noticias (Filtradas por publicación activa) */}
             <div className="space-y-6">
-              {noticias.map((item) => (
+              {noticias.filter(item => item.publicado !== false).length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-stone-200">
+                  <p className="text-stone-500 font-medium text-sm">No hay noticias o comunicados publicados en este momento.</p>
+                </div>
+              ) : (
+                noticias.filter(item => item.publicado !== false).map((item) => (
                 <article
                   key={item.id}
                   className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-center"
@@ -470,7 +475,8 @@ export function PortalAdopcionesView({ onBackToApp }) {
                     </div>
                   </div>
                 </article>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -495,11 +501,11 @@ export function PortalAdopcionesView({ onBackToApp }) {
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-stone-600 pt-2">
             <span className="flex items-center gap-1 font-semibold">
               <PhoneCall className="w-3.5 h-3.5 text-lumia-600" />
-              Guardia / Consultas: +54 9 11 9988-7766
+              Guardia / Consultas: {configPortal?.telefono_guardia || '+54 9 11 9988-7766'}
             </span>
             <span className="flex items-center gap-1 font-semibold">
               <MapPin className="w-3.5 h-3.5 text-lumia-600" />
-              Buenos Aires, Argentina
+              {configPortal?.zona_cobertura || 'Buenos Aires, Argentina'}
             </span>
           </div>
 

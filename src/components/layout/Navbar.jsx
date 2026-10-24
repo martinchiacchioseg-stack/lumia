@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useData } from '../../context/DataContext';
 import { 
@@ -9,6 +10,7 @@ import {
   MapPin, 
   Bell, 
   ShieldCheck, 
+  ShieldAlert,
   FileSpreadsheet, 
   BarChart3,
   ExternalLink,
@@ -16,8 +18,13 @@ import {
 } from 'lucide-react';
 
 export function Navbar({ currentView, setCurrentView }) {
+  const { currentUser } = useAuth();
   const { hasPermission } = usePermissions();
   const { mensajesSistema } = useData();
+
+  const isSuperadmin = 
+    currentUser?.rol === 'Superadministrador' || 
+    currentUser?.email === 'martinchiacchio.seg@gmail.com';
 
   const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
@@ -29,6 +36,7 @@ export function Navbar({ currentView, setCurrentView }) {
     { id: 'reportes', label: 'Reportes Calle', icon: MapPin, visible: hasPermission('reportes_calle', 'ver') },
     { id: 'alertas', label: 'Alertas', icon: Bell, visible: true },
     { id: 'mensajes', label: 'Mensajes', icon: Inbox, badge: unreadMessages, visible: true },
+    { id: 'panel_superadmin', label: 'Panel Superadmin', icon: ShieldAlert, visible: isSuperadmin },
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, visible: hasPermission('estadisticas', 'ver') },
     { id: 'usuarios', label: 'Usuarios y Roles', icon: ShieldCheck, visible: hasPermission('usuarios', 'ver') },
     { id: 'import_export', label: 'Importar / Exportar', icon: FileSpreadsheet, visible: hasPermission('import_export', 'ver') },

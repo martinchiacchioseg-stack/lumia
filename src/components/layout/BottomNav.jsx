@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useData } from '../../context/DataContext';
 import { 
@@ -11,6 +12,7 @@ import {
   X,
   HeartHandshake,
   ShieldCheck,
+  ShieldAlert,
   FileSpreadsheet,
   BarChart3,
   ExternalLink,
@@ -19,9 +21,14 @@ import {
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 
 export function BottomNav({ currentView, setCurrentView }) {
+  const { currentUser } = useAuth();
   const { hasPermission } = usePermissions();
   const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const isSuperadmin = 
+    currentUser?.rol === 'Superadministrador' || 
+    currentUser?.email === 'martinchiacchio.seg@gmail.com';
 
   const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
@@ -90,6 +97,16 @@ export function BottomNav({ currentView, setCurrentView }) {
                 >
                   <FileSpreadsheet className="w-4 h-4 text-sky-600" />
                   <span>Importar / Exportar</span>
+                </button>
+              )}
+
+              {isSuperadmin && (
+                <button
+                  onClick={() => navigateTo('panel_superadmin')}
+                  className="col-span-2 flex items-center gap-2.5 p-3 rounded-2xl bg-stone-900 text-white text-left font-bold text-sm shadow-sm"
+                >
+                  <ShieldAlert className="w-4 h-4 text-lumia-400" />
+                  <span>Panel Administrativo Superadmin</span>
                 </button>
               )}
 
