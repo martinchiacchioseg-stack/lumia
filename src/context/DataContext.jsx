@@ -7,7 +7,8 @@ import {
   INITIAL_FOLLOWUPS,
   INITIAL_HEALTH_EVENTS,
   INITIAL_STREET_REPORTS,
-  INITIAL_AUDIT_LOGS
+  INITIAL_AUDIT_LOGS,
+  INITIAL_NEWS
 } from '../lib/seedData';
 
 const DataContext = createContext(null);
@@ -51,6 +52,11 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
   });
 
+  const [noticias, setNoticias] = useState(() => {
+    const saved = localStorage.getItem('patita_noticias');
+    return saved ? JSON.parse(saved) : INITIAL_NEWS;
+  });
+
   // Guardar en localStorage
   useEffect(() => { localStorage.setItem('patita_animales', JSON.stringify(animales)); }, [animales]);
   useEffect(() => { localStorage.setItem('patita_adoptantes', JSON.stringify(adoptantes)); }, [adoptantes]);
@@ -59,6 +65,7 @@ export function DataProvider({ children }) {
   useEffect(() => { localStorage.setItem('patita_eventos_salud', JSON.stringify(eventosSalud)); }, [eventosSalud]);
   useEffect(() => { localStorage.setItem('patita_reportes_calle', JSON.stringify(reportesCalle)); }, [reportesCalle]);
   useEffect(() => { localStorage.setItem('patita_auditoria', JSON.stringify(auditoria)); }, [auditoria]);
+  useEffect(() => { localStorage.setItem('patita_noticias', JSON.stringify(noticias)); }, [noticias]);
 
   /**
    * Registrar evento en la bitácora de auditoría
@@ -362,6 +369,34 @@ export function DataProvider({ children }) {
     return prepared.length;
   };
 
+  /**
+   * Gestión de Noticias y Publicaciones del Administrador
+   */
+  const addNoticia = (noticiaData) => {
+    const newNoticia = {
+      id: `noticia-${Date.now()}`,
+      ...noticiaData,
+      fecha: new Date().toLocaleDateString('es-AR'),
+      autor: currentUser?.nombre || 'Administración',
+      publicado: true,
+      created_at: new Date().toISOString()
+    };
+    setNoticias(prev => [newNoticia, ...prev]);
+    logAudit('Publicación de noticia', 'noticias', newNoticia.titulo);
+    return newNoticia;
+  };
+
+  const updateNoticia = (id, data) => {
+    setNoticias(prev => prev.map(n => n.id === id ? { ...n, ...data, updated_at: new Date().toISOString() } : n));
+    logAudit('Actualización de noticia', 'noticias', data.titulo || id);
+  };
+
+  const deleteNoticia = (id) => {
+    const found = noticias.find(n => n.id === id);
+    setNoticias(prev => prev.filter(n => n.id !== id));
+    logAudit('Eliminación de noticia', 'noticias', found?.titulo || id);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -372,6 +407,7 @@ export function DataProvider({ children }) {
         eventosSalud,
         reportesCalle,
         auditoria,
+        noticias,
         addAnimal,
         updateAnimal,
         archiveAnimal,
@@ -390,6 +426,9 @@ export function DataProvider({ children }) {
         convertReportToAnimal,
         bulkImportAnimals,
         bulkImportAdopters,
+        addNoticia,
+        updateNoticia,
+        deleteNoticia,
         logAudit,
         generateAnimalCode
       }}

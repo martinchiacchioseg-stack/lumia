@@ -21,6 +21,7 @@ import { UsuariosRolesView } from './components/usuarios/UsuariosRolesView';
 import { ImportExportView } from './components/import_export/ImportExportView';
 import { EstadisticasView } from './components/estadisticas/EstadisticasView';
 import { DossierFuncionesView } from './components/public/DossierFuncionesView';
+import { PortalAdopcionesView } from './components/public/PortalAdopcionesView';
 
 // Modales Globales
 import { ModalNuevoAnimal } from './components/animales/ModalNuevoAnimal';
@@ -36,11 +37,32 @@ function MainApp() {
     return typeof window !== 'undefined' && window.location.search.includes('dossier=true');
   });
 
+  // Detectar si se ingresó mediante el enlace libre del Portal de Adopciones y Noticias
+  const [isPortalMode, setIsPortalMode] = useState(() => {
+    return typeof window !== 'undefined' && (window.location.search.includes('portal=adopciones') || window.location.search.includes('adopciones=true'));
+  });
+
   // Modales compartidos
   const [showNewAnimalModal, setShowNewAnimalModal] = useState(false);
   const [showNewReportModal, setShowNewReportModal] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState(null);
   const [editingAnimal, setEditingAnimal] = useState(null);
+
+  // Si se accede mediante el link libre del Portal de Adopciones y Noticias
+  if (isPortalMode || currentView === 'portal') {
+    return (
+      <PortalAdopcionesView
+        onBackToApp={() => {
+          setIsPortalMode(false);
+          if (window.history.pushState) {
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+          }
+          setCurrentView('dashboard');
+        }}
+      />
+    );
+  }
 
   // Si se accede mediante el link oficial de funciones (compartido por Superadmin)
   if (isDossierMode || currentView === 'dossier') {

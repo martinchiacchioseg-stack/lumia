@@ -3,7 +3,8 @@ import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { Badge } from '../common/Badge';
 import { formatDate } from '../../lib/formatters';
-import { Search, Plus, Filter, Dog, Cat, MapPin, Calendar, Heart } from 'lucide-react';
+import { ModalFlyerRedes } from './ModalFlyerRedes';
+import { Search, Plus, Filter, Dog, Cat, MapPin, Calendar, Heart, Share2, ExternalLink, Sparkles } from 'lucide-react';
 
 export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
   const { animales } = useData();
@@ -12,6 +13,7 @@ export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
   const [search, setSearch] = useState('');
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterEspecie, setFilterEspecie] = useState('todos');
+  const [flyerAnimal, setFlyerAnimal] = useState(null);
 
   // Filtrado
   const filtered = animales.filter(animal => {
@@ -40,15 +42,29 @@ export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
           <p className="text-xs text-stone-500">Gestión de fichas, historias clínicas y estados de caso</p>
         </div>
 
-        {hasPermission('animales', 'crear') && (
-          <button
-            onClick={onOpenNewAnimal}
-            className="px-4 py-2.5 rounded-2xl bg-patita-600 hover:bg-patita-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-patita-600/30 flex items-center justify-center gap-1.5 transition-all"
+        <div className="flex items-center gap-2">
+          <a
+            href={`${window.location.origin}${window.location.pathname}?portal=adopciones`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-stone-50 text-lumia-700 font-bold text-xs sm:text-sm border border-lumia-300 shadow-sm flex items-center justify-center gap-1.5 transition-all"
+            title="Abrir el Portal Público de Adopciones y Noticias (Link libre para compartir)"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Rescate</span>
-          </button>
-        )}
+            <ExternalLink className="w-4 h-4 text-lumia-600" />
+            <span className="hidden sm:inline">Portal Adopciones (Link Libre)</span>
+            <span className="sm:hidden">Portal</span>
+          </a>
+
+          {hasPermission('animales', 'crear') && (
+            <button
+              onClick={onOpenNewAnimal}
+              className="px-4 py-2.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-lumia-500/30 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Rescate</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Buscador y Filtros */}
@@ -165,15 +181,32 @@ export function AnimalesListView({ onSelectAnimal, onOpenNewAnimal }) {
                     <Calendar className="w-3.5 h-3.5 text-stone-400" />
                     <span>Rescate: {formatDate(animal.fecha_rescate)}</span>
                   </div>
-                  <div className="flex items-center gap-1 truncate max-w-[130px]">
-                    <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                    <span className="truncate">{animal.ubicacion_rescate || 'Ubicación registrada'}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFlyerAnimal(animal);
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] flex items-center gap-1 transition-colors shadow-sm"
+                    title="Generar Flyer personalizado para Redes Sociales"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Flyer</span>
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modal Generador de Flyer para Redes Sociales */}
+      {flyerAnimal && (
+        <ModalFlyerRedes
+          animal={flyerAnimal}
+          isOpen={Boolean(flyerAnimal)}
+          onClose={() => setFlyerAnimal(null)}
+        />
       )}
     </div>
   );

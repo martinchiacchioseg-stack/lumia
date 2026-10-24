@@ -7,6 +7,7 @@ import { Logo } from '../common/Logo';
 import { formatDate, isOverdue, getWhatsappLink, getWhatsappTemplate } from '../../lib/formatters';
 import { downloadLibretaPdf, getLibretaPdfBlobUrl } from '../../services/pdfService.js';
 import { VerificacionPublicaModal } from '../public/VerificacionPublicaModal';
+import { ModalFlyerRedes } from './ModalFlyerRedes';
 import { 
   Dog, 
   Cat, 
@@ -25,7 +26,8 @@ import {
   UserCheck,
   CheckCircle2,
   Sparkles,
-  QrCode
+  QrCode,
+  Share2
 } from 'lucide-react';
 
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
@@ -43,6 +45,7 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
   const [activeTab, setActiveTab] = useState('datos');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showFlyerModal, setShowFlyerModal] = useState(false);
 
   // Estado para nuevo evento de salud
   const [showAddHealth, setShowAddHealth] = useState(false);
@@ -197,6 +200,15 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
           >
             <QrCode className="w-4 h-4 text-lumia-200" />
             <span>Ficha QR</span>
+          </button>
+
+          <button
+            onClick={() => setShowFlyerModal(true)}
+            className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+            title="Generar Flyer para publicar en Instagram, Facebook y WhatsApp"
+          >
+            <Share2 className="w-4 h-4 text-stone-900" />
+            <span>Flyer Redes</span>
           </button>
 
           <button
@@ -743,6 +755,15 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
           adoptante={adopter}
           adopcion={adoption}
           eventosSalud={animalHealthEvents}
+        />
+      )}
+
+      {/* Modal Generador de Flyer para Redes Sociales */}
+      {showFlyerModal && (
+        <ModalFlyerRedes
+          animal={animal}
+          isOpen={showFlyerModal}
+          onClose={() => setShowFlyerModal(false)}
         />
       )}
     </Modal>

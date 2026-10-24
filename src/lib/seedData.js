@@ -389,3 +389,39 @@ export const INITIAL_AUDIT_LOGS = [
     fecha: '2026-10-16T17:30:00.000Z'
   }
 ];
+
+export const INITIAL_NEWS = [
+  {
+    id: 'noticia-1',
+    titulo: 'Jornada de Castración Gratuita y Vacunación Antirrábica',
+    fecha: '24/10/2026',
+    categoria: 'Campaña Sanitaria',
+    resumen: 'Este sábado estaremos en la plaza realizando castraciones con turno previo y vacunación antirrábica por orden de llegada para perros y gatos.',
+    cuerpo: 'Continuamos con el plan integral de control ético poblacional. Si tenés animales de la calle en tu cuadra o querés castrar a tu rescatado, escribinos para reservar turno.',
+    foto_url: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=80',
+    autor: 'Génesis Bustamante',
+    publicado: true
+  },
+  {
+    id: 'noticia-2',
+    titulo: '¡Final Feliz! Milo ya duerme en su nuevo hogar definitivo',
+    fecha: '22/10/2026',
+    categoria: 'Caso de Éxito',
+    resumen: 'Después de 3 meses de recuperación y cuidados en hogar de tránsito, Milo fue adoptado responsablemente por una hermosa familia en Belgrano.',
+    cuerpo: 'Queremos agradecer a todos los que compartieron sus fotos en redes sociales y a su hogar de tránsito por cuidarlo con tanto amor. ¡Las adopciones salvan vidas!',
+    foto_url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=80',
+    autor: 'Génesis Bustamante',
+    publicado: true
+  },
+  {
+    id: 'noticia-3',
+    titulo: 'Convocatoria Abierta: Buscamos Hogares de Tránsito Solidarios',
+    fecha: '18/10/2026',
+    categoria: 'Comunidad',
+    resumen: 'El tránsito es el eslabón clave del rescate. Si tenés un espacio seguro en tu casa o departamento y querés ayudar a un animal mientras encuentra familia, sumate.',
+    cuerpo: 'Nosotras cubrimos el alimento balanceado, la atención veterinaria y los insumos médicos. Vos solo ponés el techo, el cuidado y el amor.',
+    foto_url: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=800&q=80',
+    autor: 'Génesis Bustamante',
+    publicado: true
+  }
+];

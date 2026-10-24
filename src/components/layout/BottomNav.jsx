@@ -12,7 +12,8 @@ import {
   HeartHandshake,
   ShieldCheck,
   FileSpreadsheet,
-  BarChart3
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 
@@ -88,6 +89,16 @@ export function BottomNav({ currentView, setCurrentView }) {
                   <span>Importar / Exportar</span>
                 </button>
               )}
+
+              <a
+                href={`${window.location.origin}${window.location.pathname}?portal=adopciones`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="col-span-2 flex items-center justify-center gap-2 p-3 rounded-2xl bg-lumia-50 hover:bg-lumia-100 text-lumia-800 font-bold text-xs border border-lumia-200 shadow-sm"
+              >
+                <ExternalLink className="w-4 h-4 text-lumia-600" />
+                <span>Portal de Adopciones y Noticias (Link Libre)</span>
+              </a>
             </div>
           </div>
         </div>
