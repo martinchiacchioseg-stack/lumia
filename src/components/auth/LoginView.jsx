@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../common/Logo';
-import { Lock, Mail, Eye, EyeOff, ShieldAlert, Sparkles, KeyRound } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldAlert, KeyRound } from 'lucide-react';
 
 export function LoginView() {
   const { login, loading } = useAuth();
@@ -21,11 +21,6 @@ export function LoginView() {
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión. Verificá tus credenciales.');
     }
-  };
-
-  const handleQuickLogin = (emailPreset, passPreset) => {
-    setEmail(emailPreset);
-    setPassword(passPreset);
   };
 
   const handleForgotPassword = (e) => {
@@ -134,40 +129,6 @@ export function LoginView() {
               )}
             </button>
           </form>
-
-          {/* Accesos rápidos de desarrollo / prueba de cuentas */}
-          <div className="mt-6 pt-5 border-t border-stone-200">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-lumia-500" />
-              <span>Cuentas precargadas para evaluación:</span>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('martinchiacchio.seg@gmail.com', 'Chiacchio@1938')}
-                className="w-full text-left p-2.5 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-xs transition-colors flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-bold text-stone-800">Superadministrador</p>
-                  <p className="text-stone-500 text-[11px]">martinchiacchio.seg@gmail.com</p>
-                </div>
-                <span className="text-[10px] bg-lumia-100 text-lumia-800 font-bold px-2 py-0.5 rounded">Cargar</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('genesisbustamante88@gmail.com', '123456')}
-                className="w-full text-left p-2.5 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-xs transition-colors flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-bold text-stone-800">Administradora (Rescatista)</p>
-                  <p className="text-stone-500 text-[11px]">genesisbustamante88@gmail.com</p>
-                </div>
-                <span className="text-[10px] bg-lumia-100 text-lumia-800 font-bold px-2 py-0.5 rounded">Cargar</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="mt-4 text-center text-xs text-stone-400">
