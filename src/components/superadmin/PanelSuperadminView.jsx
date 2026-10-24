@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../common/Logo';
+import { downloadDossierPdf } from '../../services/dossierPdfService';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -24,7 +25,8 @@ import {
   Calendar,
   X,
   AlertTriangle,
-  Info
+  Info,
+  FileDown
 } from 'lucide-react';
 
 export function PanelSuperadminView() {
@@ -55,6 +57,19 @@ export function PanelSuperadminView() {
   });
 
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
+  const [downloadingDossier, setDownloadingDossier] = useState(false);
+
+  const handleDownloadDossier = async () => {
+    setDownloadingDossier(true);
+    try {
+      await downloadDossierPdf();
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el dossier en PDF.');
+    } finally {
+      setDownloadingDossier(false);
+    }
+  };
 
   // Estados para modal de crear/editar noticia
   const [modalNoticiaOpen, setModalNoticiaOpen] = useState(false);
@@ -170,6 +185,16 @@ export function PanelSuperadminView() {
         </div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleDownloadDossier}
+            disabled={downloadingDossier}
+            className="px-4 py-2.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-lumia-500/30 disabled:opacity-50"
+            title="Descargar Dossier Oficial de Capacidades en PDF (5 Páginas)"
+          >
+            <FileDown className="w-4 h-4 text-white" />
+            <span>{downloadingDossier ? 'Generando...' : 'Descargar Dossier (PDF)'}</span>
+          </button>
+
           <a
             href={portalUrl}
             target="_blank"

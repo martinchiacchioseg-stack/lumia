@@ -77,15 +77,15 @@ export function Header({ currentView, setCurrentView }) {
                 </button>
               )}
 
-              {/* Opción EXCLUSIVA Superadministrador: Compartir Link de Funciones */}
+              {/* Opción EXCLUSIVA Superadministrador: Dossier Oficial */}
               {isSuperadmin && (
                 <button
                   onClick={() => setShowSuperadminShare(true)}
                   className="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Generar y Compartir Enlace Oficial de Funciones (Exclusivo Superadministrador)"
+                  title="Dossier Técnico Oficial de Capacidades y Descarga PDF (Exclusivo Superadministrador)"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="hidden md:inline">Compartir Funciones</span>
+                  <span className="hidden md:inline">Dossier Oficial</span>
                 </button>
               )}
 

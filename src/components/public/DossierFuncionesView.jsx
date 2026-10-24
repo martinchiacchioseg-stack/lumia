@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
+import { downloadDossierPdf } from '../../services/dossierPdfService';
 import { 
   ShieldCheck, 
   Dog, 
@@ -20,26 +21,45 @@ import {
   CheckCircle2, 
   ArrowLeft,
   Sparkles,
-  Layers
+  Layers,
+  Fingerprint,
+  Bot,
+  Share2,
+  Globe,
+  Inbox,
+  FileDown
 } from 'lucide-react';
 
 export function DossierFuncionesView({ onBackToApp }) {
   const { currentUser } = useAuth();
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingDossier, setDownloadingDossier] = useState(false);
+  const [downloadingManual, setDownloadingManual] = useState(false);
 
   if (currentUser?.rol !== 'Superadministrador') {
     return null;
   }
 
+  const handleDownloadDossier = async () => {
+    setDownloadingDossier(true);
+    try {
+      await downloadDossierPdf();
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el dossier en PDF.');
+    } finally {
+      setDownloadingDossier(false);
+    }
+  };
+
   const handleDownloadManual = async () => {
-    setDownloading(true);
+    setDownloadingManual(true);
     try {
       await downloadManualAdministradorPdf();
     } catch (err) {
       console.error(err);
       alert('Error al generar el manual en PDF.');
     } finally {
-      setDownloading(false);
+      setDownloadingManual(false);
     }
   };
 
@@ -59,7 +79,7 @@ export function DossierFuncionesView({ onBackToApp }) {
         'Ciclo de vida del caso: Rescatado → En tránsito → En adopción → Adoptado / Fallecido.',
         'Mapeo de procedencia: barrio, localidad, coordenadas geográficas o link de mapa del lugar de rescate.',
         'Galería fotográfica categorizada (rescate, evolución clínica y convivencia con su familia adoptiva).',
-        'Evaluación de conducta y socialización (relación con perros, gatos, niños, personas, manejo con pretal/correa).'
+        'Evaluación de conducta y socialización (relación con perros, gatos, niños, personas, pretal/correa).'
       ]
     },
     {
@@ -72,9 +92,9 @@ export function DossierFuncionesView({ onBackToApp }) {
       resumen: 'Base de datos de postulantes y familias adoptivas con blindaje de datos sensibles y contacto directo.',
       caracteristicas: [
         'Directorio completo con nombre, DNI/CUIT, teléfono celular con enlace directo a WhatsApp.',
-        'Relevamiento socioambiental: tipo de vivienda (casa, departamento, campo) y condición (propietario o inquilino con permiso).',
-        'Calificación del adoptante: Apto, En evaluación, o No apto / Alerta (para prevenir reincidentes y maltrato).',
-        'Blindaje de Datos Sensibles (Ley Nacional N° 25.326): DNI, foto de documento y domicilio censurados automáticamente para perfiles sin autorización expresa.',
+        'Relevamiento socioambiental: tipo de vivienda (casa, departamento, campo) y condición de tenencia.',
+        'Calificación del adoptante: Apto, En evaluación, o Alerta (registro preventivo contra maltratadores y reincidentes).',
+        'Blindaje de Datos Sensibles (Ley Nacional N° 25.326): DNI, foto de documento y domicilio censurados automáticamente.',
         'Historial de adopciones previas y vinculación de múltiples animales a un mismo adoptante.'
       ]
     },
@@ -87,7 +107,7 @@ export function DossierFuncionesView({ onBackToApp }) {
       color: 'bg-rose-50 text-rose-800 border-rose-200',
       resumen: 'Formalización del traspaso de custodia responsable con plazos de prueba y acuerdo de seguimiento.',
       caracteristicas: [
-        'Vinculación formal entre el animal y el adoptante calificado con modalidad de entrega (a domicilio o retirado).',
+        'Vinculación formal entre el animal y el adoptante calificado con modalidad de entrega registrada.',
         'Cómputo automático del período de adaptación de 15 días con tutela preventiva de la rescatista.',
         'Adjunto digital de contrato de adopción firmado en PDF o fotografía.',
         'Compromiso obligatorio de castración para cachorros entregados antes de su madurez reproductiva.',
@@ -138,7 +158,7 @@ export function DossierFuncionesView({ onBackToApp }) {
       color: 'bg-teal-50 text-teal-800 border-teal-200',
       resumen: 'Historial clínico completo con cálculo de fechas de revacunación, antiparasitarios y cirugías.',
       caracteristicas: [
-        'Registro de eventos sanitarios: Antirrábica, Séxtuple/Quíntuple, Triple Felina, Desparasitación interna y externa.',
+        'Registro de eventos sanitarios: Antirrábica, Séxtuple/Quíntuple, Triple Felina, Antiparasitarios y Cirugías.',
         'Cirugías de castración con registro de veterinaria actuante y certificado.',
         'Cálculo automático de la fecha del próximo refuerzo veterinario con integración al Centro de Alertas.',
         'Adjuntos de estudios médicos, ecografías, análisis de sangre y recetas veterinarias.'
@@ -171,7 +191,7 @@ export function DossierFuncionesView({ onBackToApp }) {
         'Libreta Única A4 Imprimible: Diseñada para imprimirse en doble faz y plegarse al medio formando un cuadernillo oficial.',
         'Incluye: Ficha del adoptante, Ficha de la mascota con foto, Tablas de vacunas, Cláusulas contractuales y Firmas.',
         'Credencial de Bolsillo (86mm x 54mm): Tarjeta de identificación plastificable con foto, señas y teléfonos de emergencia.',
-        'Manual Operativo de Gestión en PDF de 6 páginas listo para descargar por el equipo coordinador.'
+        'Manual Operativo de Gestión en PDF oficial listo para descargar por el equipo coordinador.'
       ]
     },
     {
@@ -191,22 +211,110 @@ export function DossierFuncionesView({ onBackToApp }) {
     },
     {
       numero: '10',
-      id: 'rbac',
-      titulo: 'Seguridad y Matriz Granular de Roles (RBAC)',
-      icono: Lock,
-      badge: 'Seguridad Multi-Nivel',
-      color: 'bg-purple-50 text-purple-800 border-purple-200',
-      resumen: 'Jerarquía de tres niveles configurable desde la interfaz sin necesidad de tocar código.',
+      id: 'flyers',
+      titulo: 'Generador de Flyers para Redes Sociales',
+      icono: Share2,
+      badge: 'Difusión Viral',
+      color: 'bg-pink-50 text-pink-800 border-pink-200',
+      resumen: 'Creación instantánea de flyers gráficos oficiales para Instagram, Facebook y estados de WhatsApp.',
       caracteristicas: [
-        'Superadministrador: Dueño técnico con acceso total, gestión de bases de datos, usuarios y enlaces oficiales.',
-        'Administrador: Control operativo completo de animales, adoptantes, casos, seguimientos y creación de usuarios.',
-        'Roles preconfigurados y editables: Rescatista (gestión de casos propios), Colaboradora (reportes de calle) y Solo Lectura.',
-        'Matriz granular: permisos específicos por módulo y por acción (ver, crear, editar, archivar, exportar).',
-        'Sin registro público: acceso exclusivo por invitación con contraseña temporal y cambio obligatorio en primer ingreso.'
+        'Diseño visual institucional con logotipo de LUMIA en terracota corporativo (#C94A2A).',
+        'Carga automática de la fotografía del rescatado, nombre, edad estimada, temperamento y señas particulares.',
+        'Inclusión del número de contacto oficial y requisitos de adopción responsable.',
+        'Descarga directa de imagen optimizada para compartir en redes en un solo toque.'
       ]
     },
     {
       numero: '11',
+      id: 'portal',
+      titulo: 'Portal Público Libre de Adopciones y Novedades',
+      icono: Globe,
+      badge: 'Comunidad Abierta',
+      color: 'bg-amber-50 text-amber-800 border-amber-200',
+      resumen: 'Enlace libre que cualquier perfil puede compartir sin requerir claves ni permisos de usuario.',
+      caracteristicas: [
+        'Catálogo público de rescatados en adopción con galería de imágenes y fichas accesibles para adoptantes.',
+        'Filtros por especie, tamaño, edad y compatibilidad con niños u otros animales.',
+        'Formulario de postulación directa para interesados en adoptar.',
+        'Panel administrativo donde el Superadministrador elige las noticias a publicar y el número de contacto oficial.'
+      ]
+    },
+    {
+      numero: '12',
+      id: 'ia',
+      titulo: 'Asistente con IA Especializado "Patita Aliada"',
+      icono: Bot,
+      badge: 'Inteligencia Artificial',
+      color: 'bg-orange-50 text-orange-800 border-orange-200',
+      resumen: 'Compañera virtual de rescate basada en Google Gemini Flash con voz rioplatense y empatía.',
+      caracteristicas: [
+        'Respuestas inmediatas en primeros auxilios veterinarios, manejo seguro con bozal improvisado y traslado.',
+        'Orientación sobre normativa argentina de maltrato animal (Ley Nacional N° 14.346) y trámites judiciales.',
+        'Botón directo "Consultar a Patita Aliada" desde la ficha médica de cada animal para analizar su evolución.',
+        'Privacidad absoluta bajo Ley 25.326: nunca se transmiten datos de adoptantes y las instrucciones residen en el servidor.'
+      ]
+    },
+    {
+      numero: '13',
+      id: 'mensajes',
+      titulo: 'Mensajes del Sistema y Comunicación Interna',
+      icono: Inbox,
+      badge: 'Coordinación Interna',
+      color: 'bg-blue-50 text-blue-800 border-blue-200',
+      resumen: 'Canal directo de directivas y novedades emitidas por el Superadministrador hacia los Administradores.',
+      caracteristicas: [
+        'Bandeja de entrada con contador de no leídos en el encabezado de la aplicación.',
+        'Avisos institucionales sobre actualizaciones del sistema, guardias veterinarias y cambios operativos.',
+        'Registro de auditoría interna de lecturas y confirmaciones de recepción.'
+      ]
+    },
+    {
+      numero: '14',
+      id: 'biometria',
+      titulo: 'Acceso Biométrico Nativo (Passkeys FIDO2 / WebAuthn)',
+      icono: Fingerprint,
+      badge: 'Ciberseguridad Avanzada',
+      color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      resumen: 'Ingreso instantáneo mediante huella dactilar, Face ID o Windows Hello con cero almacenamiento biométrico.',
+      caracteristicas: [
+        'Implementación oficial con @simplewebauthn conforme a los estándares de la alianza FIDO2.',
+        'Cero almacenamiento biométrico en servidores: el rasgo nunca abandona el enclave seguro del dispositivo (TPM).',
+        'Panel de Configuración de Dispositivos para todos los usuarios y revocación inmediata en caso de extravío de celular.',
+        'Protección estricta contra phishing y robo de credenciales mediante firmas criptográficas de clave pública.'
+      ]
+    },
+    {
+      numero: '15',
+      id: 'seguridad',
+      titulo: 'Políticas Criptográficas y Claves Temporales CSPRNG',
+      icono: Lock,
+      badge: 'Defensa Activa',
+      color: 'bg-purple-50 text-purple-800 border-purple-200',
+      resumen: 'Erradicación de claves por defecto y protección activa contra ataques automatizados de fuerza bruta.',
+      caracteristicas: [
+        'Generación de contraseñas temporales CSPRNG de 14 caracteres con caducidad a las 48 horas.',
+        'Muestra única al creador del usuario y cambio forzoso obligatorio en el primer inicio de sesión.',
+        'Política estricta: mínimo 10 caracteres, rechazo de contraseñas comunes y de datos del usuario.',
+        'Almacenamiento con hash Bcrypt y bloqueo automático de 15 minutos tras 5 intentos fallidos.'
+      ]
+    },
+    {
+      numero: '16',
+      id: 'rbac',
+      titulo: 'Seguridad y Matriz Granular de Roles (RBAC + RLS)',
+      icono: ShieldCheck,
+      badge: 'Seguridad Multi-Nivel',
+      color: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+      resumen: 'Jerarquía estricta configurable con aislamiento a nivel de fila en la base de datos PostgreSQL.',
+      caracteristicas: [
+        'Superadministrador: Dueño técnico con acceso total, gestión de bases de datos, noticias y configuración.',
+        'Administrador: Control operativo de animales, adoptantes, casos, seguimientos y creación de usuarios.',
+        'Roles operativos: Rescatista (gestión de casos asignados), Colaboradora (reportes de calle) y Solo Lectura.',
+        'Row Level Security (RLS) en PostgreSQL impidiendo que un perfil acceda a datos para los que no tiene permiso.'
+      ]
+    },
+    {
+      numero: '17',
       id: 'auditoria',
       titulo: 'Bitácora de Auditoría Inmutable de Actividad',
       icono: History,
@@ -216,36 +324,22 @@ export function DossierFuncionesView({ onBackToApp }) {
       caracteristicas: [
         'Registro de usuario, fecha exacta (zona horaria Buenos Aires), acción, módulo afectado y detalle de cambios.',
         'Preservación histórica: las bajas de usuarios o registros se realizan mediante borrado lógico (soft delete).',
-        'Filtro de auditoría por rango de fechas y por operador responsable.'
+        'Filtro de auditoría por rango de fechas y por operador responsable para inspección técnica.'
       ]
     },
     {
-      numero: '12',
-      id: 'import_export',
-      titulo: 'Importación y Exportación Masiva (Excel / CSV)',
-      icono: FileSpreadsheet,
-      badge: 'Interoperabilidad',
-      color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-      resumen: 'Migración rápida de planillas antiguas y respaldo periódico de la base de datos.',
-      caracteristicas: [
-        'Importador asistido de planillas de cálculo (Excel / CSV) de animales y adoptantes con mapeo de columnas.',
-        'Exportación instantánea en formatos CSV y JSON para copias de resguardo locales.',
-        'Validación automática de duplicados por DNI y códigos internos.'
-      ]
-    },
-    {
-      numero: '13',
+      numero: '18',
       id: 'pwa',
       titulo: 'Arquitectura PWA Mobile-First y Base de Datos Cloud',
       icono: Smartphone,
-      badge: 'Tecnología de Vanguardia',
+      badge: 'Tecnología Cloud',
       color: 'bg-lumia-50 text-lumia-800 border-lumia-200',
       resumen: 'Desarrollada para funcionar a la perfección en el teléfono de la rescatista en territorio.',
       caracteristicas: [
         'Instalable como Progressive Web App (PWA) en celulares Android e iPhone sin tiendas comerciales.',
-        'Funcionamiento Offline-First: permite registrar notas y consultas en la calle con guardado en LocalStorage.',
-        'Base de datos PostgreSQL en la nube (Neon / Vercel Storage / Supabase) con alta disponibilidad y escalabilidad.',
-        'Diseño con Tailwind CSS en terracota corporativo (#C94A2A) de alto contraste visual.'
+        'Funcionamiento Offline-First: permite consultar y registrar datos en la calle con guardado en LocalStorage.',
+        'Base de datos PostgreSQL en la nube (Neon) con pool de conexiones y latencia ultrabaja.',
+        'Despliegue serverless en Vercel con cabeceras de seguridad estrictas (CSP, nosniff, SameSite=Strict).'
       ]
     }
   ];
@@ -266,20 +360,32 @@ export function DossierFuncionesView({ onBackToApp }) {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* BOTÓN PRINCIPAL: DESCARGAR DOSSIER PDF */}
+            <button
+              onClick={handleDownloadDossier}
+              disabled={downloadingDossier}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-lumia-500 hover:bg-lumia-600 text-white shadow-md shadow-lumia-500/25 transition-all flex items-center gap-2 disabled:opacity-50"
+              title="Descargar Dossier Oficial Completo de Capacidades en PDF"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>{downloadingDossier ? 'Generando Dossier...' : 'Descargar Dossier (PDF)'}</span>
+            </button>
+
+            {/* BOTÓN SECUNDARIO: MANUAL PDF */}
             <button
               onClick={handleDownloadManual}
-              disabled={downloading}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-all flex items-center gap-2 border border-stone-300"
+              disabled={downloadingManual}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-all flex items-center gap-2 border border-stone-300 hidden sm:flex"
               title="Descargar Manual Operativo Completo en PDF"
             >
               <Download className="w-4 h-4 text-lumia-600" />
-              <span className="hidden sm:inline">{downloading ? 'Generando PDF...' : 'Descargar Manual (PDF)'}</span>
+              <span>{downloadingManual ? 'Generando...' : 'Manual (PDF)'}</span>
             </button>
 
             {onBackToApp && (
               <button
                 onClick={onBackToApp}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-lumia-500 hover:bg-lumia-600 text-white shadow-sm transition-all flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-stone-900 hover:bg-stone-800 text-white shadow-sm transition-all flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Volver a la App</span>
@@ -292,9 +398,9 @@ export function DossierFuncionesView({ onBackToApp }) {
       {/* Banner Principal del Dossier */}
       <div className="bg-gradient-to-b from-white via-lumia-50/40 to-stone-100 border-b border-stone-200 py-12 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-lumia-100 text-lumia-800 border border-lumia-200 mb-4 animate-in fade-in">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-lumia-100 text-lumia-800 border border-lumia-200 mb-4 animate-in fade-in">
             <Sparkles className="w-3.5 h-3.5 text-lumia-600" />
-            <span>Dossier Técnico y Funcional de la Plataforma • Enlace Oficial Exclusivo</span>
+            <span>Dossier Técnico y Funcional Oficial • 18 Módulos Integrados</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-stone-900 tracking-tight mb-3">
@@ -305,21 +411,33 @@ export function DossierFuncionesView({ onBackToApp }) {
             para rescatistas independientes de animales en la República Argentina.
           </p>
 
-          {/* Aviso de seguridad de sesión */}
-          <div className="inline-flex flex-wrap items-center justify-center gap-3 bg-white p-3 rounded-2xl border border-stone-200 shadow-sm max-w-xl mx-auto">
-            <div className="flex items-center gap-2 text-xs text-stone-600 px-2 font-medium">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Vista protegida por sesión autenticada de Superadministración</span>
+          {/* Tarjeta de descarga destacada para el Superadministrador */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 bg-white p-4 rounded-3xl border border-lumia-200 shadow-md max-w-xl mx-auto">
+            <div className="flex items-center gap-2 text-xs text-stone-700 font-medium">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div className="text-left">
+                <span className="font-bold text-stone-900 block">Exclusivo Superadministrador</span>
+                <span className="text-[11px] text-stone-500">Documento ejecutivo de 5 páginas listo para imprimir o presentar</span>
+              </div>
             </div>
+
+            <button
+              onClick={handleDownloadDossier}
+              disabled={downloadingDossier}
+              className="px-5 py-2.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs shadow-md shadow-lumia-500/30 transition-all flex items-center gap-2 shrink-0 disabled:opacity-50"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>{downloadingDossier ? 'Generando PDF...' : 'Descargar Dossier Oficial (PDF)'}</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Métricas destacadas */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 mb-8">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
-            <p className="text-2xl font-black text-lumia-600">13</p>
+            <p className="text-2xl font-black text-lumia-600">18</p>
             <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Módulos Integrados</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
@@ -327,91 +445,75 @@ export function DossierFuncionesView({ onBackToApp }) {
             <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Seguimiento 48h a 1 Año</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
-            <p className="text-2xl font-black text-sky-600">Ley 25.326</p>
-            <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Datos Sensibles Seguros</p>
+            <p className="text-2xl font-black text-sky-600">WebAuthn</p>
+            <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Passkeys Biométricas</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm text-center">
-            <p className="text-2xl font-black text-purple-600">PWA 100%</p>
-            <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Mobile-First + Offline</p>
+            <p className="text-2xl font-black text-amber-600">Gemini IA</p>
+            <p className="text-xs font-semibold text-stone-500 uppercase mt-0.5">Patita Aliada Rioplatense</p>
           </div>
         </div>
       </div>
 
-      {/* Grilla Detallada de Módulos */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-        <div className="space-y-6">
+      {/* Cuadrícula de Módulos Detallados */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {MODULOS_DETALLADOS.map((modulo) => {
-            const IconComponent = modulo.icono;
+            const Icon = modulo.icono;
             return (
               <div 
-                key={modulo.id} 
-                className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm hover:shadow-md transition-shadow"
+                key={modulo.id}
+                className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm hover:shadow-md hover:border-lumia-200 transition-all flex flex-col justify-between"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-lumia-50 text-lumia-600 flex items-center justify-center font-black text-lg border border-lumia-100 shrink-0">
-                      <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-stone-400">MÓDULO {modulo.numero}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${modulo.color}`}>
-                          {modulo.badge}
-                        </span>
-                      </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-stone-900 mt-0.5">
-                        {modulo.titulo}
-                      </h3>
-                    </div>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-black text-lumia-600 tracking-wider">
+                      MÓDULO {modulo.numero}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${modulo.color}`}>
+                      {modulo.badge}
+                    </span>
                   </div>
-                </div>
 
-                <p className="mt-4 text-xs sm:text-sm text-stone-600 font-medium">
-                  {modulo.resumen}
-                </p>
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-stone-100 flex items-center justify-center text-lumia-600 shrink-0">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-stone-900 leading-tight">
+                      {modulo.titulo}
+                    </h3>
+                  </div>
 
-                <div className="mt-4 pt-4 border-t border-stone-100">
-                  <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2.5">
-                    Funciones y Reglas de Negocio Implementadas:
-                  </h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-stone-600">
+                  <p className="text-xs text-stone-600 mb-4 leading-relaxed font-medium">
+                    {modulo.resumen}
+                  </p>
+
+                  <div className="space-y-2 border-t border-stone-100 pt-3">
                     {modulo.caracteristicas.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2 bg-stone-50 p-2.5 rounded-xl border border-stone-100">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <span className="leading-relaxed">{item}</span>
-                      </li>
+                      <div key={idx} className="flex items-start gap-2 text-[11px] text-stone-600 leading-snug">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-lumia-600 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Bloque final de descarga del manual */}
-        <div className="mt-12 bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-3xl p-8 sm:p-10 shadow-xl text-center max-w-4xl mx-auto">
-          <div className="w-16 h-16 rounded-3xl bg-lumia-500/20 text-lumia-400 flex items-center justify-center mx-auto mb-4 border border-lumia-400/30">
-            <FileText className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-2">
-            Descargá el Manual Operativo Oficial Completo en PDF
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-300 max-w-xl mx-auto mb-6">
-            Documento institucional de 6 páginas con portada, diagramas de flujo, tablas explicativas 
-            y los protocolos de acción para el equipo administrador y rescatistas.
-          </p>
+        {/* Botón flotante inferior para descargar el PDF */}
+        <div className="mt-12 text-center">
           <button
-            onClick={handleDownloadManual}
-            disabled={downloading}
-            className="px-6 py-3.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-sm shadow-lg shadow-lumia-500/30 transition-all inline-flex items-center gap-2"
+            onClick={handleDownloadDossier}
+            disabled={downloadingDossier}
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-sm shadow-lg shadow-lumia-500/30 transition-all disabled:opacity-50"
           >
-            <Download className="w-5 h-5" />
-            <span>{downloading ? 'Generando documento oficial...' : 'Descargar Manual Operativo (PDF)'}</span>
+            <FileDown className="w-5 h-5" />
+            <span>{downloadingDossier ? 'Generando Documento Oficial...' : 'Descargar Dossier Completo en PDF (5 Páginas)'}</span>
           </button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
-
-export default DossierFuncionesView;
