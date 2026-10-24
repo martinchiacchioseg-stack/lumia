@@ -16,7 +16,8 @@ import {
   FileSpreadsheet,
   BarChart3,
   ExternalLink,
-  Inbox
+  Inbox,
+  Fingerprint
 } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 
@@ -107,6 +108,17 @@ export function BottomNav({ currentView, setCurrentView }) {
                   <span>Panel Administrativo Superadmin</span>
                 </button>
               )}
+
+              <button
+                onClick={() => navigateTo('configuracion')}
+                className="col-span-2 flex items-center gap-2.5 p-3 rounded-2xl bg-lumia-50 hover:bg-lumia-100 text-lumia-900 text-left font-bold text-sm border border-lumia-200 shadow-sm"
+              >
+                <Fingerprint className="w-5 h-5 text-lumia-600 shrink-0" />
+                <div className="flex-1">
+                  <div>Configuración y Biometría</div>
+                  <div className="text-[10px] font-normal text-lumia-700">Activar huella / rostro y gestionar seguridad</div>
+                </div>
+              </button>
 
               <button
                 onClick={() => navigateTo('mensajes')}

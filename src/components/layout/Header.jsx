@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox, Fingerprint } from 'lucide-react';
+import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox, Fingerprint, Settings } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 import { Logo } from '../common/Logo';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
@@ -145,31 +145,37 @@ export function Header({ currentView, setCurrentView }) {
                 )}
               </button>
 
-              {/* Acceso Biométrico / Passkeys */}
-              {isPasskeySupported && (
-                <button
-                  onClick={() => setShowDevicesModal(true)}
-                  className="p-2.5 rounded-2xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
-                  title="Configurar Huella o Rostro (Passkeys)"
-                >
-                  <Fingerprint className="w-5 h-5 text-lumia-600" />
-                </button>
-              )}
+              {/* Botón directo a Configuración y Biometría para todos los usuarios */}
+              <button
+                onClick={() => setCurrentView('configuracion')}
+                className={`p-2.5 rounded-2xl transition-colors ${
+                  currentView === 'configuracion'
+                    ? 'bg-lumia-50 text-lumia-700 ring-2 ring-lumia-500'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+                title="Configuración de Cuenta y Biometría (Huella / Rostro)"
+              >
+                <Fingerprint className="w-5 h-5 text-lumia-600" />
+              </button>
 
               {/* Perfil del Usuario */}
               <div className="flex items-center gap-2 pl-2 border-l border-stone-200">
-                <div className="text-right hidden sm:block">
+                <button
+                  onClick={() => setCurrentView('configuracion')}
+                  className="text-right hidden sm:block hover:opacity-80 transition-opacity text-left"
+                  title="Ir a Configuración"
+                >
                   <p className="text-xs font-bold text-stone-800 leading-tight">{currentUser?.nombre}</p>
                   <div className="flex items-center justify-end gap-1">
                     <ShieldCheck className="w-3 h-3 text-lumia-500" />
                     <span className="text-[10px] text-stone-500 font-semibold">{currentUser?.rol}</span>
                   </div>
-                </div>
+                </button>
 
                 <div 
-                  onClick={() => isPasskeySupported && setShowDevicesModal(true)}
+                  onClick={() => setCurrentView('configuracion')}
                   className="w-9 h-9 rounded-2xl bg-lumia-50 text-lumia-700 font-bold text-sm flex items-center justify-center border border-lumia-200 shadow-sm cursor-pointer hover:bg-lumia-100 transition-colors"
-                  title="Administrar dispositivos y biometría"
+                  title="Configuración de cuenta y biometría"
                 >
                   {currentUser?.nombre ? currentUser.nombre.charAt(0).toUpperCase() : 'U'}
                 </div>

@@ -22,11 +22,12 @@ import {
   ShieldAlert,
   Download,
   Sparkles,
-  Share2
+  Share2,
+  Fingerprint
 } from 'lucide-react';
 
 export function UsuariosRolesView() {
-  const { currentUser, users, createUser, updateUser, resetUserPassword } = useAuth();
+  const { currentUser, users, createUser, updateUser, resetUserPassword, allPasskeyDevices } = useAuth();
   const { roles, saveRole, deleteRole } = usePermissions();
 
   const [activeTab, setActiveTab] = useState('usuarios'); // 'usuarios' | 'roles'
@@ -266,6 +267,7 @@ export function UsuariosRolesView() {
                     <th className="py-3.5 px-4">Rol Asignado</th>
                     <th className="py-3.5 px-4">Estado</th>
                     <th className="py-3.5 px-4">Primer Ingreso</th>
+                    <th className="py-3.5 px-4">Biometría</th>
                     <th className="py-3.5 px-4 text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -311,6 +313,25 @@ export function UsuariosRolesView() {
                           ) : (
                             <span className="text-[11px] text-emerald-700 font-medium">✓ Cambiada</span>
                           )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {(() => {
+                            const userPasskeys = (allPasskeyDevices || []).filter(
+                              d => d.usuario_id === user.id || d.usuario_email === user.email
+                            );
+                            if (userPasskeys.length > 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  <Fingerprint className="w-3 h-3 text-emerald-600" />
+                                  <span>{userPasskeys.length} llave{userPasskeys.length > 1 ? 's' : ''}</span>
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-[11px] text-stone-400">Sin passkey</span>
+                            );
+                          })()}
                         </td>
 
                         <td className="py-3 px-4 text-right space-x-1">

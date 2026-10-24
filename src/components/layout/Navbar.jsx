@@ -14,7 +14,8 @@ import {
   FileSpreadsheet, 
   BarChart3,
   ExternalLink,
-  Inbox
+  Inbox,
+  Fingerprint
 } from 'lucide-react';
 
 export function Navbar({ currentView, setCurrentView }) {
@@ -38,6 +39,7 @@ export function Navbar({ currentView, setCurrentView }) {
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, visible: hasPermission('estadisticas', 'ver') },
     { id: 'usuarios', label: 'Usuarios y Roles', icon: ShieldCheck, visible: hasPermission('usuarios', 'ver') },
     { id: 'import_export', label: 'Importar / Exportar', icon: FileSpreadsheet, visible: hasPermission('import_export', 'ver') },
+    { id: 'configuracion', label: 'Configuración', icon: Fingerprint, visible: true },
   ];
 
   return (
