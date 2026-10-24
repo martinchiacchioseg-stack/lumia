@@ -12,7 +12,7 @@ export const INITIAL_USERS = [
     must_change_password: true,
     is_temp_password: true,
     temp_password_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-    password_hash: '$2b$10$f69yP7y44K3y5f2X2gH9zO5.X4.7h8K8V9L3mQ1W2E3R4T5Y6U7I8',
+    password_hash: '$2b$10$hgQVBxGKyyg3eMgDEa9WXeklB3HNly2FcrVs8CVrum2DwqZ./VxHK',
     created_at: '2026-10-01T10:00:00.000Z',
     ultimo_ingreso: null
   },
@@ -27,7 +27,7 @@ export const INITIAL_USERS = [
     must_change_password: true,
     is_temp_password: true,
     temp_password_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-    password_hash: '$2b$10$f69yP7y44K3y5f2X2gH9zO5.X4.7h8K8V9L3mQ1W2E3R4T5Y6U7I8',
+    password_hash: '$2b$10$xMjZPGlJrYMDxR8e.MMWBO5IkOyd2jJIWFotD//7DxGX.kEQJwEje',
     created_at: '2026-10-01T10:30:00.000Z',
     ultimo_ingreso: null
   },
