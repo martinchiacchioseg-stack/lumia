@@ -17,14 +17,18 @@ import {
   BarChart3,
   ExternalLink,
   Inbox,
-  Fingerprint
+  Fingerprint,
+  RefreshCw,
+  Cloud,
+  CloudOff,
+  CheckCircle2
 } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 
 export function BottomNav({ currentView, setCurrentView }) {
   const { currentUser } = useAuth();
   const { hasPermission } = usePermissions();
-  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
+  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema, syncStatus, syncWithServer } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isSuperadmin = currentUser?.rol === 'Superadministrador';
@@ -133,6 +137,33 @@ export function BottomNav({ currentView, setCurrentView }) {
                     {unreadMessages} nuevos
                   </span>
                 )}
+              </button>
+
+              {/* Sincronización Nube Móvil */}
+              <button
+                onClick={() => syncWithServer(true)}
+                disabled={syncStatus === 'syncing'}
+                className="col-span-2 flex items-center justify-between p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-left font-semibold text-sm border border-emerald-200 shadow-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  {syncStatus === 'syncing' ? (
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                  ) : syncStatus === 'offline' ? (
+                    <CloudOff className="w-4 h-4 text-stone-500" />
+                  ) : (
+                    <Cloud className="w-4 h-4 text-emerald-600" />
+                  )}
+                  <span>
+                    {syncStatus === 'syncing'
+                      ? 'Sincronizando con la nube...'
+                      : syncStatus === 'offline'
+                      ? 'Modo Local (Sin conexión)'
+                      : 'Sincronizado con Neon PostgreSQL'}
+                  </span>
+                </div>
+                <span className="text-xs text-emerald-700 bg-white/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Actualizar
+                </span>
               </button>
 
               <a

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox, Fingerprint, Settings } from 'lucide-react';
+import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox, Fingerprint, Settings, RefreshCw, CheckCircle2, CloudOff } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 import { Logo } from '../common/Logo';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
@@ -11,7 +11,7 @@ import { MisDispositivosModal } from '../auth/MisDispositivosModal';
 
 export function Header({ currentView, setCurrentView }) {
   const { currentUser, logout, isPasskeySupported } = useAuth();
-  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
+  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema, syncStatus, syncWithServer } = useData();
 
   const [downloadingManual, setDownloadingManual] = useState(false);
   const [showSuperadminShare, setShowSuperadminShare] = useState(false);
@@ -102,20 +102,37 @@ export function Header({ currentView, setCurrentView }) {
                 </button>
               )}
 
-              {/* Indicador de Backend */}
-              <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border bg-stone-50 border-stone-200 text-stone-600">
-                {isSupabaseConfigured ? (
+              {/* Indicador y Botón de Sincronización en la Nube con Neon PostgreSQL */}
+              <button
+                onClick={() => syncWithServer(true)}
+                disabled={syncStatus === 'syncing'}
+                className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                  syncStatus === 'syncing'
+                    ? 'bg-amber-50 border-amber-300 text-amber-800'
+                    : syncStatus === 'offline'
+                    ? 'bg-stone-100 border-stone-300 text-stone-600'
+                    : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800 shadow-xs'
+                }`}
+                title="Sincronización en tiempo real con Neon PostgreSQL. Hacé clic para actualizar ahora."
+              >
+                {syncStatus === 'syncing' ? (
                   <>
-                    <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Supabase Conectado</span>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                    <span>Sincronizando...</span>
+                  </>
+                ) : syncStatus === 'offline' ? (
+                  <>
+                    <CloudOff className="w-3.5 h-3.5 text-stone-500" />
+                    <span>Local (Sin conexión)</span>
                   </>
                 ) : (
                   <>
-                    <Database className="w-3.5 h-3.5 text-lumia-500" />
-                    <span>Neon Postgres</span>
+                    <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Neon en Nube</span>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 ml-0.5" />
                   </>
                 )}
-              </div>
+              </button>
 
               {/* Mensajes del Sistema */}
               <button

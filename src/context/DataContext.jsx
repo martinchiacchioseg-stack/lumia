@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import {
   INITIAL_ANIMALS,
@@ -12,13 +12,19 @@ import {
   INITIAL_SYSTEM_MESSAGES,
   INITIAL_PORTAL_CONFIG
 } from '../lib/seedData';
+import {
+  fetchServerData,
+  syncItemUpsert,
+  syncItemDelete,
+  syncBatchUpsert
+} from '../services/dataSyncService';
 
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
   const { currentUser } = useAuth();
 
-  // Estados principales de datos
+  // Estados principales de datos (iniciados con caché local de localStorage o semilla de respaldo)
   const [animales, setAnimales] = useState(() => {
     const saved = localStorage.getItem('patita_animales');
     return saved ? JSON.parse(saved) : INITIAL_ANIMALS;
@@ -69,7 +75,40 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_PORTAL_CONFIG;
   });
 
-  // Guardar en localStorage
+  // Estado de sincronización en tiempo real con Neon PostgreSQL
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'offline' | 'error'
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+
+  // Referencias mutables para evitar cierres obsoletos en sincronizaciones periódicas
+  const stateRef = useRef({
+    animales,
+    adoptantes,
+    adopciones,
+    seguimientos,
+    eventosSalud,
+    reportesCalle,
+    auditoria,
+    noticias,
+    mensajesSistema,
+    configPortal
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      animales,
+      adoptantes,
+      adopciones,
+      seguimientos,
+      eventosSalud,
+      reportesCalle,
+      auditoria,
+      noticias,
+      mensajesSistema,
+      configPortal
+    };
+  }, [animales, adoptantes, adopciones, seguimientos, eventosSalud, reportesCalle, auditoria, noticias, mensajesSistema, configPortal]);
+
+  // Persistencia local en localStorage (Caché Offline inmediata)
   useEffect(() => { localStorage.setItem('patita_animales', JSON.stringify(animales)); }, [animales]);
   useEffect(() => { localStorage.setItem('patita_adoptantes', JSON.stringify(adoptantes)); }, [adoptantes]);
   useEffect(() => { localStorage.setItem('patita_adopciones', JSON.stringify(adopciones)); }, [adopciones]);
@@ -80,6 +119,181 @@ export function DataProvider({ children }) {
   useEffect(() => { localStorage.setItem('patita_noticias', JSON.stringify(noticias)); }, [noticias]);
   useEffect(() => { localStorage.setItem('patita_mensajes_sistema', JSON.stringify(mensajesSistema)); }, [mensajesSistema]);
   useEffect(() => { localStorage.setItem('patita_config_portal', JSON.stringify(configPortal)); }, [configPortal]);
+
+  const isSyncingRef = useRef(false);
+
+  /**
+   * Sincroniza bidireccionalmente con Neon PostgreSQL
+   * - Trae datos agregados por otros dispositivos (celulares / PC)
+   * - Si este dispositivo tiene registros creados que aún no están en la nube, los sube automáticamente
+   */
+  const syncWithServer = useCallback(async (isManual = false) => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    setSyncStatus('syncing');
+
+    try {
+      const res = await fetchServerData();
+
+      if (!res.success) {
+        setSyncStatus(res.offline ? 'offline' : 'error');
+        isSyncingRef.current = false;
+        return;
+      }
+
+      const serverCols = res.collections || {};
+      const totalServerRecords = res.totalRecords || 0;
+      const current = stateRef.current;
+
+      // CASO 1: Si la base de datos en Neon está recién inicializada y vacía:
+      // Subimos todos nuestros datos locales (incluyendo cualquier animal o adopción que ya se haya creado)
+      if (totalServerRecords === 0) {
+        const batchToPush = [
+          ...current.animales.map(item => ({ collection: 'animales', item })),
+          ...current.adoptantes.map(item => ({ collection: 'adoptantes', item })),
+          ...current.adopciones.map(item => ({ collection: 'adopciones', item })),
+          ...current.seguimientos.map(item => ({ collection: 'seguimientos', item })),
+          ...current.eventosSalud.map(item => ({ collection: 'eventos_salud', item })),
+          ...current.reportesCalle.map(item => ({ collection: 'reportes_calle', item })),
+          ...current.mensajesSistema.map(item => ({ collection: 'mensajes_sistema', item })),
+          ...current.noticias.map(item => ({ collection: 'noticias', item })),
+          ...(current.configPortal ? [{ collection: 'config_portal', item: { id: 'singleton', ...current.configPortal } }] : [])
+        ];
+
+        if (batchToPush.length > 0) {
+          await syncBatchUpsert(batchToPush);
+        }
+
+        setSyncStatus('synced');
+        setLastSyncTime(new Date());
+        isSyncingRef.current = false;
+        return;
+      }
+
+      // CASO 2: La base de datos en Neon ya tiene datos:
+      // Realizamos un merge inteligente para cada colección:
+      // a) Identificamos items que este dispositivo creó localmente y no están en el servidor -> se suben
+      // b) Actualizamos el estado con la lista unificada del servidor
+      const pendingUploads = [];
+
+      // 1. Animales
+      const serverAnimales = serverCols.animales || [];
+      const serverAnimalIds = new Set(serverAnimales.map(a => a.id));
+      const localOnlyAnimals = current.animales.filter(a => !serverAnimalIds.has(a.id));
+      if (localOnlyAnimals.length > 0) {
+        localOnlyAnimals.forEach(item => pendingUploads.push({ collection: 'animales', item }));
+      }
+      setAnimales([...serverAnimales, ...localOnlyAnimals]);
+
+      // 2. Adoptantes
+      const serverAdoptantes = serverCols.adoptantes || [];
+      const serverAdopterIds = new Set(serverAdoptantes.map(a => a.id));
+      const localOnlyAdopters = current.adoptantes.filter(a => !serverAdopterIds.has(a.id));
+      if (localOnlyAdopters.length > 0) {
+        localOnlyAdopters.forEach(item => pendingUploads.push({ collection: 'adoptantes', item }));
+      }
+      setAdoptantes([...serverAdoptantes, ...localOnlyAdopters]);
+
+      // 3. Adopciones
+      const serverAdopciones = serverCols.adopciones || [];
+      const serverAdoptionIds = new Set(serverAdopciones.map(a => a.id));
+      const localOnlyAdoptions = current.adopciones.filter(a => !serverAdoptionIds.has(a.id));
+      if (localOnlyAdoptions.length > 0) {
+        localOnlyAdoptions.forEach(item => pendingUploads.push({ collection: 'adopciones', item }));
+      }
+      setAdopciones([...serverAdopciones, ...localOnlyAdoptions]);
+
+      // 4. Seguimientos
+      const serverSeguimientos = serverCols.seguimientos || [];
+      const serverSegIds = new Set(serverSeguimientos.map(s => s.id));
+      const localOnlySegs = current.seguimientos.filter(s => !serverSegIds.has(s.id));
+      if (localOnlySegs.length > 0) {
+        localOnlySegs.forEach(item => pendingUploads.push({ collection: 'seguimientos', item }));
+      }
+      setSeguimientos([...serverSeguimientos, ...localOnlySegs]);
+
+      // 5. Eventos de Salud
+      const serverSalud = serverCols.eventos_salud || [];
+      const serverSaludIds = new Set(serverSalud.map(e => e.id));
+      const localOnlySalud = current.eventosSalud.filter(e => !serverSaludIds.has(e.id));
+      if (localOnlySalud.length > 0) {
+        localOnlySalud.forEach(item => pendingUploads.push({ collection: 'eventos_salud', item }));
+      }
+      setEventosSalud([...serverSalud, ...localOnlySalud]);
+
+      // 6. Reportes de Calle
+      const serverReportes = serverCols.reportes_calle || [];
+      const serverReportIds = new Set(serverReportes.map(r => r.id));
+      const localOnlyReports = current.reportesCalle.filter(r => !serverReportIds.has(r.id));
+      if (localOnlyReports.length > 0) {
+        localOnlyReports.forEach(item => pendingUploads.push({ collection: 'reportes_calle', item }));
+      }
+      setReportesCalle([...serverReportes, ...localOnlyReports]);
+
+      // 7. Mensajes del Sistema
+      const serverMensajes = serverCols.mensajes_sistema || [];
+      const serverMsgIds = new Set(serverMensajes.map(m => m.id));
+      const localOnlyMsgs = current.mensajesSistema.filter(m => !serverMsgIds.has(m.id));
+      if (localOnlyMsgs.length > 0) {
+        localOnlyMsgs.forEach(item => pendingUploads.push({ collection: 'mensajes_sistema', item }));
+      }
+      // Garantizar que el mensaje oficial de avances de hoy esté siempre presente
+      const combinedMsgs = [...serverMensajes, ...localOnlyMsgs];
+      setMensajesSistema(combinedMsgs);
+
+      // 8. Noticias
+      const serverNoticias = serverCols.noticias || [];
+      const serverNewsIds = new Set(serverNoticias.map(n => n.id));
+      const localOnlyNews = current.noticias.filter(n => !serverNewsIds.has(n.id));
+      if (localOnlyNews.length > 0) {
+        localOnlyNews.forEach(item => pendingUploads.push({ collection: 'noticias', item }));
+      }
+      setNoticias([...serverNoticias, ...localOnlyNews]);
+
+      // 9. Configuración del Portal
+      if (serverCols.config_portal) {
+        setConfigPortal(serverCols.config_portal);
+      }
+
+      // Si había registros locales huérfanos, los subimos a Neon en segundo plano
+      if (pendingUploads.length > 0) {
+        await syncBatchUpsert(pendingUploads);
+      }
+
+      setSyncStatus('synced');
+      setLastSyncTime(new Date());
+    } catch (err) {
+      console.error('[DataContext Sync Error]:', err);
+      setSyncStatus('error');
+    } finally {
+      isSyncingRef.current = false;
+    }
+  }, []);
+
+  // Sincronización en segundo plano: al montar, periódica cada 20 segundos y al recuperar el foco/visibilidad
+  useEffect(() => {
+    syncWithServer(false);
+
+    const interval = setInterval(() => {
+      syncWithServer(false);
+    }, 20000);
+
+    const onFocus = () => syncWithServer(false);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithServer(false);
+      }
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [syncWithServer]);
 
   /**
    * Registrar evento en la bitácora de auditoría
@@ -94,6 +308,7 @@ export function DataProvider({ children }) {
       fecha: new Date().toISOString()
     };
     setAuditoria(prev => [newLog, ...prev]);
+    syncItemUpsert('auditoria', newLog);
   };
 
   /**
@@ -119,17 +334,32 @@ export function DataProvider({ children }) {
     };
     setAnimales(prev => [newAnimal, ...prev]);
     logAudit('Registro de rescate', 'animales', `${newAnimal.nombre_actual} (${codigo_interno})`);
+    syncItemUpsert('animales', newAnimal);
     return newAnimal;
   };
 
   const updateAnimal = (id, data) => {
-    setAnimales(prev => prev.map(a => a.id === id ? { ...a, ...data, updated_at: new Date().toISOString() } : a));
+    setAnimales(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('animales', updated);
+        return updated;
+      }
+      return a;
+    }));
     const current = animales.find(a => a.id === id);
     logAudit('Modificación de ficha', 'animales', current?.nombre_actual || id);
   };
 
   const archiveAnimal = (id) => {
-    setAnimales(prev => prev.map(a => a.id === id ? { ...a, archivado: true } : a));
+    setAnimales(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, archivado: true, updated_at: new Date().toISOString() };
+        syncItemUpsert('animales', updated);
+        return updated;
+      }
+      return a;
+    }));
     const current = animales.find(a => a.id === id);
     logAudit('Archivado de animal', 'animales', current?.nombre_actual || id);
   };
@@ -144,17 +374,32 @@ export function DataProvider({ children }) {
     };
     setAdoptantes(prev => [newAdopter, ...prev]);
     logAudit('Alta de adoptante', 'adoptantes', newAdopter.nombre_apellido);
+    syncItemUpsert('adoptantes', newAdopter);
     return newAdopter;
   };
 
   const updateAdoptante = (id, data) => {
-    setAdoptantes(prev => prev.map(a => a.id === id ? { ...a, ...data, updated_at: new Date().toISOString() } : a));
+    setAdoptantes(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('adoptantes', updated);
+        return updated;
+      }
+      return a;
+    }));
     const current = adoptantes.find(a => a.id === id);
     logAudit('Actualización de adoptante', 'adoptantes', current?.nombre_apellido || id);
   };
 
   const archiveAdoptante = (id) => {
-    setAdoptantes(prev => prev.map(a => a.id === id ? { ...a, archivado: true } : a));
+    setAdoptantes(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, archivado: true, updated_at: new Date().toISOString() };
+        syncItemUpsert('adoptantes', updated);
+        return updated;
+      }
+      return a;
+    }));
     const current = adoptantes.find(a => a.id === id);
     logAudit('Archivado de adoptante', 'adoptantes', current?.nombre_apellido || id);
   };
@@ -256,11 +501,22 @@ export function DataProvider({ children }) {
     const adop = adoptantes.find(ad => ad.id === data.adoptante_id);
     logAudit('Nueva adopción concretada', 'adopciones', `${anim?.nombre_actual || ''} adoptado/a por ${adop?.nombre_apellido || ''}`);
 
+    // Sincronizar en Neon PostgreSQL
+    syncItemUpsert('adopciones', newAdoption);
+    syncBatchUpsert(scheduledFollowups.map(item => ({ collection: 'seguimientos', item })));
+
     return newAdoption;
   };
 
   const updateAdopcion = (id, data) => {
-    setAdopciones(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+    setAdopciones(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('adopciones', updated);
+        return updated;
+      }
+      return a;
+    }));
     logAudit('Actualización de adopción', 'adopciones', `Adopción #${id}`);
   };
 
@@ -274,11 +530,19 @@ export function DataProvider({ children }) {
     };
     setSeguimientos(prev => [newSeg, ...prev]);
     logAudit('Registro de seguimiento posadopción', 'seguimientos', `Control ${data.fecha_contacto} (${data.estado_general})`);
+    syncItemUpsert('seguimientos', newSeg);
     return newSeg;
   };
 
   const updateSeguimiento = (id, data) => {
-    setSeguimientos(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+    setSeguimientos(prev => prev.map(s => {
+      if (s.id === id) {
+        const updated = { ...s, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('seguimientos', updated);
+        return updated;
+      }
+      return s;
+    }));
   };
 
   // =================== EVENTOS DE SALUD ===================
@@ -291,15 +555,24 @@ export function DataProvider({ children }) {
     setEventosSalud(prev => [newEvent, ...prev]);
     const anim = animales.find(a => a.id === data.animal_id);
     logAudit('Registro de evento veterinario', 'eventos_salud', `${data.tipo_evento} - ${anim?.nombre_actual || ''}`);
+    syncItemUpsert('eventos_salud', newEvent);
     return newEvent;
   };
 
   const updateEventoSalud = (id, data) => {
-    setEventosSalud(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
+    setEventosSalud(prev => prev.map(e => {
+      if (e.id === id) {
+        const updated = { ...e, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('eventos_salud', updated);
+        return updated;
+      }
+      return e;
+    }));
   };
 
   const deleteEventoSalud = (id) => {
     setEventosSalud(prev => prev.filter(e => e.id !== id));
+    syncItemDelete('eventos_salud', id);
   };
 
   // =================== REPORTES DE CALLE ===================
@@ -312,11 +585,19 @@ export function DataProvider({ children }) {
     };
     setReportesCalle(prev => [newReport, ...prev]);
     logAudit('Nuevo reporte de calle recibido', 'reportes_calle', newReport.direccion_aproximada || 'Alerta comunitaria');
+    syncItemUpsert('reportes_calle', newReport);
     return newReport;
   };
 
   const updateReporteCalle = (id, data) => {
-    setReportesCalle(prev => prev.map(r => r.id === id ? { ...r, ...data } : r));
+    setReportesCalle(prev => prev.map(r => {
+      if (r.id === id) {
+        const updated = { ...r, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('reportes_calle', updated);
+        return updated;
+      }
+      return r;
+    }));
     logAudit('Actualización de reporte de calle', 'reportes_calle', `Reporte #${id}`);
   };
 
@@ -368,6 +649,7 @@ export function DataProvider({ children }) {
     }));
     setAnimales(prev => [...prepared, ...prev]);
     logAudit('Importación masiva de animales', 'animales', `${prepared.length} registros`);
+    syncBatchUpsert(prepared.map(item => ({ collection: 'animales', item })));
     return prepared.length;
   };
 
@@ -380,6 +662,7 @@ export function DataProvider({ children }) {
     }));
     setAdoptantes(prev => [...prepared, ...prev]);
     logAudit('Importación masiva de adoptantes', 'adoptantes', `${prepared.length} registros`);
+    syncBatchUpsert(prepared.map(item => ({ collection: 'adoptantes', item })));
     return prepared.length;
   };
 
@@ -397,11 +680,19 @@ export function DataProvider({ children }) {
     };
     setNoticias(prev => [newNoticia, ...prev]);
     logAudit('Publicación de noticia', 'noticias', newNoticia.titulo);
+    syncItemUpsert('noticias', newNoticia);
     return newNoticia;
   };
 
   const updateNoticia = (id, data) => {
-    setNoticias(prev => prev.map(n => n.id === id ? { ...n, ...data, updated_at: new Date().toISOString() } : n));
+    setNoticias(prev => prev.map(n => {
+      if (n.id === id) {
+        const updated = { ...n, ...data, updated_at: new Date().toISOString() };
+        syncItemUpsert('noticias', updated);
+        return updated;
+      }
+      return n;
+    }));
     logAudit('Actualización de noticia', 'noticias', data.titulo || id);
   };
 
@@ -409,14 +700,17 @@ export function DataProvider({ children }) {
     const found = noticias.find(n => n.id === id);
     setNoticias(prev => prev.filter(n => n.id !== id));
     logAudit('Eliminación de noticia', 'noticias', found?.titulo || id);
+    syncItemDelete('noticias', id);
   };
 
   const toggleNoticiaPublicada = (id) => {
     setNoticias(prev => prev.map(n => {
       if (n.id === id) {
         const nuevoEstado = !n.publicado;
+        const updated = { ...n, publicado: nuevoEstado, updated_at: new Date().toISOString() };
         logAudit(nuevoEstado ? 'Publicación de noticia en portal' : 'Despublicación de noticia del portal', 'noticias', n.titulo);
-        return { ...n, publicado: nuevoEstado };
+        syncItemUpsert('noticias', updated);
+        return updated;
       }
       return n;
     }));
@@ -429,6 +723,7 @@ export function DataProvider({ children }) {
     setConfigPortal(prev => {
       const updated = { ...prev, ...newConfig, updated_at: new Date().toISOString() };
       logAudit('Actualización de configuración del portal público', 'configuracion', 'Portal Público');
+      syncItemUpsert('config_portal', { id: 'singleton', ...updated });
       return updated;
     });
   };
@@ -455,16 +750,25 @@ export function DataProvider({ children }) {
     };
     setMensajesSistema(prev => [newMsg, ...prev]);
     logAudit('Envío de mensaje del sistema', 'mensajes_sistema', newMsg.asunto);
+    syncItemUpsert('mensajes_sistema', newMsg);
     return newMsg;
   };
 
   const marcarMensajeLeido = (id) => {
-    setMensajesSistema(prev => prev.map(m => m.id === id ? { ...m, leido: true } : m));
+    setMensajesSistema(prev => prev.map(m => {
+      if (m.id === id) {
+        const updated = { ...m, leido: true };
+        syncItemUpsert('mensajes_sistema', updated);
+        return updated;
+      }
+      return m;
+    }));
   };
 
   const deleteMensajeSistema = (id) => {
     setMensajesSistema(prev => prev.filter(m => m.id !== id));
     logAudit('Eliminación de mensaje del sistema', 'mensajes_sistema', id);
+    syncItemDelete('mensajes_sistema', id);
   };
 
   return (
@@ -480,6 +784,9 @@ export function DataProvider({ children }) {
         noticias,
         mensajesSistema,
         configPortal,
+        syncStatus,
+        lastSyncTime,
+        syncWithServer,
         addAnimal,
         updateAnimal,
         archiveAnimal,

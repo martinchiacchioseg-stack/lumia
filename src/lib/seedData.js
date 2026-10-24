@@ -437,6 +437,42 @@ export const INITIAL_NEWS = [
 
 export const INITIAL_SYSTEM_MESSAGES = [
   {
+    id: 'msg-avances-completos-hoy-20261024',
+    remitente_nombre: 'Superadministración LUMIA',
+    remitente_rol: 'Superadministrador Técnico',
+    remitente_email: 'martinchiacchio.seg@gmail.com',
+    destinatario: 'Génesis Bustamante y Equipo de Administración',
+    asunto: '🐾 Informe Oficial: Sincronización en la Nube Multidispositivo, OCR con Cámara y Mejoras Operativas',
+    categoria: 'Actualización Mayor del Sistema',
+    prioridad: 'Alta',
+    fecha: '24/10/2026',
+    hora: '20:45',
+    leido: false,
+    resumen: 'Sincronización centralizada en Neon PostgreSQL entre celulares y PC, autocompletado inteligente con cámara (OCR) en todos los formularios, ficha de adoptante en animales adoptados y descarga de dossier en PDF.',
+    contenido_detallado: [
+      {
+        titulo: '1. Sincronización Centralizada Multidispositivo en Tiempo Real (Neon PostgreSQL)',
+        detalle: 'Solucionamos la desconexión entre dispositivos. Ahora cualquier animal rescatado, adopción, adoptante o reporte de calle cargado desde un celular, tablet o PC se sincroniza de inmediato en la base de datos central en la nube (Neon PostgreSQL). Aunque abras la aplicación desde otro dispositivo o borres el historial del navegador, la información se descargará automáticamente actualizada y completa.'
+      },
+      {
+        titulo: '2. Autocompletado de Formularios con Cámara e IA (OCR Visual Inteligente)',
+        detalle: 'Se implementó el botón "Escanear con IA" / cámara en todos los formularios de la plataforma: Alta y Edición de Fichas de Animales, Libreta Sanitaria y Vacunas, Alta y Edición de Adoptantes, Registro de Adopciones, Reportes de Calle y Usuarios. En celulares abre directamente la cámara trasera y en PC permite subir imágenes o fotos de libretas veterinarias, completando los campos automáticamente y destacándolos con un reborde verde suave para su confirmación.'
+      },
+      {
+        titulo: '3. Ficha de Adoptante en Ficha de Animal Adoptado',
+        detalle: 'Para aquellos animales que se encuentren en estado "adoptado", en la parte inferior de la ficha ahora se visualiza directamente la ficha completa de la persona adoptante con sus datos de contacto y enlace directo a su calendario de seguimiento, reemplazando la información del hogar de tránsito previo.'
+      },
+      {
+        titulo: '4. Descarga del Dossier Oficial en Formato PDF',
+        detalle: 'El dossier del animal con sus fotos, historia de rescate, temperamento y estado sanitario ahora cuenta con la funcionalidad de descarga directa en PDF formal institucional desde la ficha del animal y desde el panel de superadministrador.'
+      },
+      {
+        titulo: '5. Seguridad Reforzada y Acceso Biométrico (Passkeys / WebAuthn)',
+        detalle: 'Todos los usuarios, incluyendo el superadministrador, cuentan en su sección de Configuración con la opción de registrar su huella dactilar o reconocimiento facial para iniciar sesión de manera rápida y segura sin depender de contraseñas manuales.'
+      }
+    ]
+  },
+  {
     id: 'msg-hoy-actualizaciones-20261024',
     remitente_nombre: 'Superadministración LUMIA',
     remitente_rol: 'Superadministrador Técnico',
