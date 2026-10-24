@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePermissions } from '../../context/PermissionsContext';
+import { useData } from '../../context/DataContext';
 import { 
   Home, 
   Dog, 
@@ -10,11 +11,15 @@ import {
   ShieldCheck, 
   FileSpreadsheet, 
   BarChart3,
-  ExternalLink 
+  ExternalLink,
+  Inbox
 } from 'lucide-react';
 
 export function Navbar({ currentView, setCurrentView }) {
   const { hasPermission } = usePermissions();
+  const { mensajesSistema } = useData();
+
+  const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: Home, visible: true },
@@ -23,6 +28,7 @@ export function Navbar({ currentView, setCurrentView }) {
     { id: 'adopciones', label: 'Adopciones', icon: HeartHandshake, visible: hasPermission('adopciones', 'ver') },
     { id: 'reportes', label: 'Reportes Calle', icon: MapPin, visible: hasPermission('reportes_calle', 'ver') },
     { id: 'alertas', label: 'Alertas', icon: Bell, visible: true },
+    { id: 'mensajes', label: 'Mensajes', icon: Inbox, badge: unreadMessages, visible: true },
     { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3, visible: hasPermission('estadisticas', 'ver') },
     { id: 'usuarios', label: 'Usuarios y Roles', icon: ShieldCheck, visible: hasPermission('usuarios', 'ver') },
     { id: 'import_export', label: 'Importar / Exportar', icon: FileSpreadsheet, visible: hasPermission('import_export', 'ver') },
@@ -48,6 +54,13 @@ export function Navbar({ currentView, setCurrentView }) {
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-stone-500'}`} />
                   <span>{item.label}</span>
+                  {item.badge > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      isActive ? 'bg-white text-lumia-700' : 'bg-rose-500 text-white'
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

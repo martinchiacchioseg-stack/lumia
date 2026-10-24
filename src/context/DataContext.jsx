@@ -8,7 +8,8 @@ import {
   INITIAL_HEALTH_EVENTS,
   INITIAL_STREET_REPORTS,
   INITIAL_AUDIT_LOGS,
-  INITIAL_NEWS
+  INITIAL_NEWS,
+  INITIAL_SYSTEM_MESSAGES
 } from '../lib/seedData';
 
 const DataContext = createContext(null);
@@ -57,6 +58,11 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_NEWS;
   });
 
+  const [mensajesSistema, setMensajesSistema] = useState(() => {
+    const saved = localStorage.getItem('patita_mensajes_sistema');
+    return saved ? JSON.parse(saved) : INITIAL_SYSTEM_MESSAGES;
+  });
+
   // Guardar en localStorage
   useEffect(() => { localStorage.setItem('patita_animales', JSON.stringify(animales)); }, [animales]);
   useEffect(() => { localStorage.setItem('patita_adoptantes', JSON.stringify(adoptantes)); }, [adoptantes]);
@@ -66,6 +72,7 @@ export function DataProvider({ children }) {
   useEffect(() => { localStorage.setItem('patita_reportes_calle', JSON.stringify(reportesCalle)); }, [reportesCalle]);
   useEffect(() => { localStorage.setItem('patita_auditoria', JSON.stringify(auditoria)); }, [auditoria]);
   useEffect(() => { localStorage.setItem('patita_noticias', JSON.stringify(noticias)); }, [noticias]);
+  useEffect(() => { localStorage.setItem('patita_mensajes_sistema', JSON.stringify(mensajesSistema)); }, [mensajesSistema]);
 
   /**
    * Registrar evento en la bitácora de auditoría
@@ -397,6 +404,40 @@ export function DataProvider({ children }) {
     logAudit('Eliminación de noticia', 'noticias', found?.titulo || id);
   };
 
+  /**
+   * Gestión de Mensajes Oficiales del Sistema (Superadmin a Administrador)
+   */
+  const addMensajeSistema = (msgData) => {
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      remitente_nombre: currentUser?.nombre || 'Superadministrador Técnico',
+      remitente_rol: currentUser?.rol || 'Superadministrador',
+      remitente_email: currentUser?.email || 'martinchiacchio.seg@gmail.com',
+      destinatario: msgData.destinatario || 'Administración y Coordinación de Rescate',
+      asunto: msgData.asunto || 'Comunicado Oficial del Sistema',
+      categoria: msgData.categoria || 'Aviso General',
+      prioridad: msgData.prioridad || 'Media',
+      fecha: new Date().toLocaleDateString('es-AR'),
+      hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+      leido: false,
+      resumen: msgData.resumen || '',
+      contenido_detallado: msgData.contenido_detallado || [],
+      created_at: new Date().toISOString()
+    };
+    setMensajesSistema(prev => [newMsg, ...prev]);
+    logAudit('Envío de mensaje del sistema', 'mensajes_sistema', newMsg.asunto);
+    return newMsg;
+  };
+
+  const marcarMensajeLeido = (id) => {
+    setMensajesSistema(prev => prev.map(m => m.id === id ? { ...m, leido: true } : m));
+  };
+
+  const deleteMensajeSistema = (id) => {
+    setMensajesSistema(prev => prev.filter(m => m.id !== id));
+    logAudit('Eliminación de mensaje del sistema', 'mensajes_sistema', id);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -408,6 +449,7 @@ export function DataProvider({ children }) {
         reportesCalle,
         auditoria,
         noticias,
+        mensajesSistema,
         addAnimal,
         updateAnimal,
         archiveAnimal,
@@ -429,6 +471,9 @@ export function DataProvider({ children }) {
         addNoticia,
         updateNoticia,
         deleteNoticia,
+        addMensajeSistema,
+        marcarMensajeLeido,
+        deleteMensajeSistema,
         logAudit,
         generateAnimalCode
       }}

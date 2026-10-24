@@ -13,14 +13,17 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   BarChart3,
-  ExternalLink
+  ExternalLink,
+  Inbox
 } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 
 export function BottomNav({ currentView, setCurrentView }) {
   const { hasPermission } = usePermissions();
-  const { seguimientos, eventosSalud, reportesCalle } = useData();
+  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
   // Alertas
   const pendingFollowups = seguimientos.filter(s => !s.completado && (isOverdue(s.fecha_contacto) || s.estado_general === 'alerta'));
@@ -89,6 +92,21 @@ export function BottomNav({ currentView, setCurrentView }) {
                   <span>Importar / Exportar</span>
                 </button>
               )}
+
+              <button
+                onClick={() => navigateTo('mensajes')}
+                className="col-span-2 flex items-center justify-between p-3 rounded-2xl bg-stone-50 hover:bg-stone-100 text-stone-800 text-left font-medium text-sm border border-stone-200/60"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Inbox className="w-4 h-4 text-lumia-600" />
+                  <span>Mensajes del Sistema</span>
+                </div>
+                {unreadMessages > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white">
+                    {unreadMessages} nuevos
+                  </span>
+                )}
+              </button>
 
               <a
                 href={`${window.location.origin}${window.location.pathname}?portal=adopciones`}

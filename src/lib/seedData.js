@@ -425,3 +425,54 @@ export const INITIAL_NEWS = [
     publicado: true
   }
 ];
+
+export const INITIAL_SYSTEM_MESSAGES = [
+  {
+    id: 'msg-hoy-actualizaciones-20261024',
+    remitente_nombre: 'Martín Chiacchio',
+    remitente_rol: 'Superadministrador Técnico',
+    remitente_email: 'martinchiacchio.seg@gmail.com',
+    destinatario: 'Administración y Coordinación de Rescate',
+    asunto: '🚀 Informe Oficial: Actualizaciones y Nuevos Módulos Implementados en LUMIA',
+    categoria: 'Actualización Mayor del Sistema',
+    prioridad: 'Alta',
+    fecha: '24/10/2026',
+    hora: '03:15',
+    leido: false,
+    resumen: 'Resumen completo de las 8 mejoras técnicas, nuevos módulos y herramientas desplegadas hoy para la gestión operativa, difusión en redes y base de datos cloud.',
+    contenido_detallado: [
+      {
+        titulo: '1. Base de Datos en Producción (Neon PostgreSQL - AWS São Paulo)',
+        detalle: 'Conectamos exitosamente la base de datos de producción con el esquema relacional completo: tablas de animales, adoptantes con protección de datos sensibles (Ley 25.326), contratos, bitácora de seguimiento en 6 etapas, eventos de salud y reportes de calle. Se inicializó la vista inteligente vista_semaforo_adopciones que calcula automáticamente las alertas verdes, amarillas y rojas en tiempo real.'
+      },
+      {
+        titulo: '2. Limpieza de Portada de Inicio de Sesión',
+        detalle: 'Se removió el bloque provisional de "cuentas precargadas para evaluación", dejando la pantalla de bienvenida 100% limpia y formal. Tu cuenta de administradora (genesisbustamante88@gmail.com) cuenta con cambio obligatorio de contraseña en el primer acceso para garantizar la seguridad de los casos.'
+      },
+      {
+        titulo: '3. Rediseño e Identidad Visual Oficial LUMIA en Portada',
+        detalle: 'Ampliamos el logotipo oficial a escala 2xl en la portada principal. Ahora el corazón outline con huella grande centrada (#C94A2A terracota vívido), la sigla LUMIA en mayúscula y el subtítulo obligatorio "LIBRETA ÚNICA DE MASCOTAS, INFORMES Y ADOPCIONES" lucen nítidos, imponentes y legibles en cualquier celular o monitor.'
+      },
+      {
+        titulo: '4. Manual Operativo de Gestión en PDF (6 Páginas Oficiales)',
+        detalle: 'Ya contás con el botón "Manual (PDF)" en el menú superior, en el Dashboard y en la sección de usuarios. Genera un documento PDF institucional con portada formal, diagramas, protocolos de rescate, etapas de adopción y resguardo legal, listo para imprimir o capacitar a nuevas rescatistas.'
+      },
+      {
+        titulo: '5. Enlace Oficial de Funciones Exclusivo del Superadministrador',
+        detalle: 'Implementamos una herramienta de seguridad que solo yo como Superadministrador puedo activar. Genera un enlace oficial protegido que despliega el catálogo interactivo de las 13 capacidades del sistema para presentar la plataforma a instituciones, veterinarias o autoridades sin exponer claves.'
+      },
+      {
+        titulo: '6. Generador de Flyers para Redes Sociales en cada Ficha',
+        detalle: 'En la ficha de cada animal y en el listado de casos ahora disponés del botón "Flyer Redes". Te permite generar al instante piezas gráficas listas para publicar en Instagram y Facebook (Post 1:1 o Stories 9:16) con la foto del animal, señas, estado de salud, tus datos de contacto y el logo oficial de LUMIA. Podés descargarlo como imagen PNG en alta definición (1080px) o copiar el texto ya redactado con hashtags.'
+      },
+      {
+        titulo: '7. Portal Público Libre de Adopciones y Noticias',
+        detalle: 'Creamos la web pública libre (link: ?portal=adopciones) para difundir animales en adopción y noticias del refugio. Este enlace es libre y cualquier voluntaria, adoptante o seguidor puede compartirlo en sus estados de WhatsApp o redes. Los interesados pueden consultar por WhatsApp o postularse en línea directamente.'
+      },
+      {
+        titulo: '8. Nuevo Canal de Comunicaciones Oficiales ("Mensajes del Sistema")',
+        detalle: 'Este nuevo canal directo que estás viendo te permitirá recibir siempre las instrucciones técnicas, avisos de mantenimiento, respaldos y actualizaciones que vaya incorporando a la plataforma, con control de lectura y notificaciones inmediatas.'
+      }
+    ]
+  }
+];

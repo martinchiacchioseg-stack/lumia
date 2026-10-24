@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen } from 'lucide-react';
+import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 import { Logo } from '../common/Logo';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
@@ -10,7 +10,7 @@ import { ModalCompartirDossier } from '../superadmin/ModalCompartirDossier';
 
 export function Header({ currentView, setCurrentView }) {
   const { currentUser, logout } = useAuth();
-  const { seguimientos, eventosSalud, reportesCalle } = useData();
+  const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
 
   const [downloadingManual, setDownloadingManual] = useState(false);
   const [showSuperadminShare, setShowSuperadminShare] = useState(false);
@@ -35,6 +35,8 @@ export function Header({ currentView, setCurrentView }) {
   const dueHealth = eventosSalud.filter(e => e.fecha_proximo_refuerzo_o_vencimiento && (isOverdue(e.fecha_proximo_refuerzo_o_vencimiento) || isDueSoon(e.fecha_proximo_refuerzo_o_vencimiento)));
   const newReports = reportesCalle.filter(r => r.estado_reporte === 'nuevo');
   const totalAlerts = pendingFollowups.length + dueHealth.length + newReports.length;
+
+  const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
   return (
     <>
@@ -96,6 +98,20 @@ export function Header({ currentView, setCurrentView }) {
                   </>
                 )}
               </div>
+
+              {/* Mensajes del Sistema */}
+              <button
+                onClick={() => setCurrentView('mensajes')}
+                className="relative p-2.5 rounded-2xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                title="Mensajes del Sistema"
+              >
+                <Inbox className="w-5 h-5" />
+                {unreadMessages > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center animate-pulse">
+                    {unreadMessages}
+                  </span>
+                )}
+              </button>
 
               {/* Campana de Alertas */}
               <button

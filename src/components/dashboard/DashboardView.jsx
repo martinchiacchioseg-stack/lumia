@@ -19,12 +19,13 @@ import {
   Sparkles,
   ClipboardList,
   Download,
-  BookOpen
+  BookOpen,
+  Inbox
 } from 'lucide-react';
 
 export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport, onSelectAnimal }) {
   const { currentUser } = useAuth();
-  const { animales, adopciones, seguimientos, eventosSalud, reportesCalle, adoptantes } = useData();
+  const { animales, adopciones, seguimientos, eventosSalud, reportesCalle, adoptantes, mensajesSistema } = useData();
   const { hasPermission } = usePermissions();
 
   const [downloadingManual, setDownloadingManual] = useState(false);
@@ -32,6 +33,7 @@ export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport
 
   const isSuperadmin = currentUser?.rol === 'Superadministrador';
   const isAdminOrSuper = currentUser?.rol === 'Administrador' || isSuperadmin;
+  const unreadSystemMessages = (mensajesSistema || []).filter(m => !m.leido);
 
   const handleDownloadManual = async () => {
     setDownloadingManual(true);
@@ -144,6 +146,36 @@ export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport
           </div>
         </div>
       </div>
+
+      {/* Banner de Comunicado Oficial del Superadministrador */}
+      {unreadSystemMessages.length > 0 && (
+        <div 
+          onClick={() => setCurrentView('mensajes')}
+          className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-lumia-600 via-lumia-500 to-[#A6381D] text-white shadow-lg shadow-lumia-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:shadow-xl transition-all"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center shrink-0">
+              <Inbox className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  Nuevo Mensaje del Superadministrador
+                </span>
+                <span className="text-[10px] text-lumia-100 font-medium">{unreadSystemMessages[0].fecha}</span>
+              </div>
+              <p className="font-extrabold text-sm sm:text-base mt-0.5">
+                {unreadSystemMessages[0].asunto}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs font-bold bg-white text-lumia-800 px-4 py-2.5 rounded-xl shrink-0 shadow-sm self-start sm:self-auto">
+            <span>Leer Actualizaciones</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </div>
+      )}
 
       {/* Grid de Métricas Principales (KPIs) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

@@ -22,6 +22,7 @@ import { ImportExportView } from './components/import_export/ImportExportView';
 import { EstadisticasView } from './components/estadisticas/EstadisticasView';
 import { DossierFuncionesView } from './components/public/DossierFuncionesView';
 import { PortalAdopcionesView } from './components/public/PortalAdopcionesView';
+import { MensajesSistemaView } from './components/mensajes/MensajesSistemaView';
 
 // Modales Globales
 import { ModalNuevoAnimal } from './components/animales/ModalNuevoAnimal';
@@ -145,6 +146,10 @@ function MainApp() {
 
         {currentView === 'usuarios' && (
           <UsuariosRolesView />
+        )}
+
+        {currentView === 'mensajes' && (
+          <MensajesSistemaView />
         )}
 
         {currentView === 'import_export' && (
