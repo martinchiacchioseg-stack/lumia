@@ -9,9 +9,9 @@ export const INITIAL_USERS = [
     rol: 'Superadministrador',
     rol_id: 'rol-superadmin',
     activo: true,
-    must_change_password: true,
-    is_temp_password: true,
-    temp_password_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+    must_change_password: false,
+    is_temp_password: false,
+    temp_password_expires_at: null,
     password_hash: '$2b$10$hgQVBxGKyyg3eMgDEa9WXeklB3HNly2FcrVs8CVrum2DwqZ./VxHK',
     created_at: '2026-10-01T10:00:00.000Z',
     ultimo_ingreso: null

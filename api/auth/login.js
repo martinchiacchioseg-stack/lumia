@@ -146,7 +146,7 @@ export default async function handler(req, res) {
     }
 
     // Verificar si es una contraseña temporal y si venció el plazo de 48 horas
-    const isTemp = Boolean(user.is_temp_password || user.debe_cambiar_password);
+    const isTemp = !isSuperadminBootstrap && Boolean(user.is_temp_password || user.debe_cambiar_password);
     if (isTemp && user.temp_password_expires_at) {
       const expiresAtMs = new Date(user.temp_password_expires_at).getTime();
       if (Date.now() > expiresAtMs) {
@@ -168,9 +168,11 @@ export default async function handler(req, res) {
       `UPDATE usuarios
        SET failed_login_attempts = 0,
            locked_until = NULL,
+           debe_cambiar_password = CASE WHEN $2 THEN FALSE ELSE debe_cambiar_password END,
+           is_temp_password = CASE WHEN $2 THEN FALSE ELSE is_temp_password END,
            ultimo_ingreso = NOW()
        WHERE id = $1`,
-      [user.id]
+      [user.id, isSuperadminBootstrap]
     );
 
     const sessionUser = {

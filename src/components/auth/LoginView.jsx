@@ -183,37 +183,6 @@ export function LoginView() {
               </button>
             )}
           </form>
-
-          {/* Accesos rápidos de desarrollo / evaluación */}
-          <div className="mt-6 pt-5 border-t border-stone-100">
-            <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2.5 text-center">
-              Acceso rápido para evaluación
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('martinchiacchio.seg@gmail.com');
-                  setPassword('Chiacchio@1938');
-                }}
-                className="p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-lumia-50 hover:border-lumia-300 text-left transition-all group"
-              >
-                <div className="text-xs font-bold text-stone-800 group-hover:text-lumia-700">Superadmin</div>
-                <div className="text-[10px] text-stone-500 truncate">martinchiacchio.seg...</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('genesisbustamante88@gmail.com');
-                  setPassword('123456');
-                }}
-                className="p-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-lumia-50 hover:border-lumia-300 text-left transition-all group"
-              >
-                <div className="text-xs font-bold text-stone-800 group-hover:text-lumia-700">Administrador</div>
-                <div className="text-[10px] text-stone-500 truncate">genesisbustamante88...</div>
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="mt-4 text-center text-xs text-stone-400">

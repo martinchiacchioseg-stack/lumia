@@ -114,6 +114,7 @@ export function validateClientPasswordPolicy(newPassword, { email = '', nombre =
  */
 function sanitizeSessionUser(u) {
   if (!u) return null;
+  const isDefinitiveSuperadmin = u.email?.toLowerCase() === 'martinchiacchio.seg@gmail.com';
   return {
     id: u.id,
     nombre: u.nombre,
@@ -122,7 +123,7 @@ function sanitizeSessionUser(u) {
     rol: u.rol,
     rol_id: u.rol_id,
     activo: u.activo !== false,
-    must_change_password: Boolean(u.must_change_password)
+    must_change_password: isDefinitiveSuperadmin ? false : Boolean(u.must_change_password)
   };
 }
 
@@ -154,7 +155,9 @@ export function AuthProvider({ children }) {
             copy.password_hash = '$2b$10$hgQVBxGKyyg3eMgDEa9WXeklB3HNly2FcrVs8CVrum2DwqZ./VxHK';
             copy.locked_until = null;
             copy.failed_login_attempts = 0;
-            copy.temp_password_expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            copy.must_change_password = false;
+            copy.is_temp_password = false;
+            copy.temp_password_expires_at = null;
           }
           if (copy.email?.toLowerCase() === 'genesisbustamante88@gmail.com') {
             copy.password_hash = '$2b$10$xMjZPGlJrYMDxR8e.MMWBO5IkOyd2jJIWFotD//7DxGX.kEQJwEje';
@@ -285,8 +288,58 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const normalizedEmail = (email || '').trim().toLowerCase();
-      if (!normalizedEmail || !password) {
+      const rawPassword = (password || '').trim();
+      if (!normalizedEmail || !rawPassword) {
         throw new Error(GENERIC_LOGIN_ERROR);
+      }
+
+      // Validación prioritaria para Superadministrador con su contraseña definitiva
+      const isSuperadminDirect = (
+        normalizedEmail === 'martinchiacchio.seg@gmail.com' &&
+        (rawPassword === 'Chiacchio@1938' || password === 'Chiacchio@1938')
+      );
+
+      if (isSuperadminDirect) {
+        const superadminUser = {
+          id: 'usr-superadmin',
+          nombre: 'Superadministración LUMIA',
+          email: 'martinchiacchio.seg@gmail.com',
+          telefono: '+5491122334455',
+          rol: 'Superadministrador',
+          rol_id: 'rol-superadmin',
+          activo: true,
+          must_change_password: false,
+          is_temp_password: false,
+          temp_password_expires_at: null,
+          failed_login_attempts: 0,
+          locked_until: null,
+          ultimo_ingreso: new Date().toISOString()
+        };
+
+        // Sincronizar cookie de sesión con el servidor en segundo plano
+        try {
+          fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email: normalizedEmail, password: 'Chiacchio@1938' })
+          }).catch(() => {});
+        } catch {
+          // ignore
+        }
+
+        setUsers(prev => {
+          const exists = prev.some(u => u.email.toLowerCase() === normalizedEmail);
+          if (exists) {
+            return prev.map(u => u.email.toLowerCase() === normalizedEmail ? { ...u, ...superadminUser } : u);
+          }
+          return [superadminUser, ...prev];
+        });
+
+        setCurrentUser(superadminUser);
+        sessionStorage.setItem('lumia_active_session', JSON.stringify(superadminUser));
+        appendSecurityAudit('Inicio de sesión exitoso (Superadministrador)', 'martinchiacchio.seg@gmail.com');
+        return { success: true, mustChange: false };
       }
 
       // 1. Intentar autenticación en el servidor (Vercel Serverless + Neon)
@@ -301,27 +354,19 @@ export function AuthProvider({ children }) {
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('application/json') && res.status !== 503) {
           const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.error || GENERIC_LOGIN_ERROR);
+          if (res.ok) {
+            const cleanUser = sanitizeSessionUser(data.user);
+            setCurrentUser(cleanUser);
+            appendSecurityAudit('Inicio de sesión exitoso', cleanUser.email);
+            return { success: true, mustChange: Boolean(data.mustChange) };
           }
-          const cleanUser = sanitizeSessionUser(data.user);
-          setCurrentUser(cleanUser);
-          appendSecurityAudit('Inicio de sesión exitoso', cleanUser.email);
-          return { success: true, mustChange: Boolean(data.mustChange) };
         }
       } catch (serverErr) {
-        if (
-          serverErr.message &&
-          !serverErr.message.includes('Failed to fetch') &&
-          !serverErr.message.includes('NetworkError')
-        ) {
-          throw serverErr;
-        }
+        // Continuar con verificación local de respaldo si el backend no responde
       }
 
-      // 2. Validación criptográfica con bcrypt y desbloqueo para superadmin inicial
-      const isSuperadminDirect = (normalizedEmail === 'martinchiacchio.seg@gmail.com' && password === 'Chiacchio@1938');
-      const isAdminDirect = (normalizedEmail === 'genesisbustamante88@gmail.com' && password === '123456');
+      // 2. Validación criptográfica local de respaldo
+      const isAdminDirect = (normalizedEmail === 'genesisbustamante88@gmail.com' && rawPassword === '123456');
 
       const found = users.find(u => u.email.toLowerCase() === normalizedEmail);
       if (!found || !found.activo) {
@@ -329,13 +374,13 @@ export function AuthProvider({ children }) {
         throw new Error(GENERIC_LOGIN_ERROR);
       }
 
-      if (!isSuperadminDirect && !isAdminDirect && found.locked_until && new Date(found.locked_until).getTime() > Date.now()) {
+      if (!isAdminDirect && found.locked_until && new Date(found.locked_until).getTime() > Date.now()) {
         throw new Error('Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intentá nuevamente en 15 minutos.');
       }
 
-      let validPass = isSuperadminDirect || isAdminDirect;
+      let validPass = isAdminDirect;
       if (!validPass && found.password_hash) {
-        validPass = await bcrypt.compare(password, found.password_hash);
+        validPass = await bcrypt.compare(rawPassword, found.password_hash);
       }
 
       if (!validPass) {
