@@ -5,6 +5,8 @@ import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { MODULOS, ACCIONES, PERMISO_DATOS_SENSIBLES } from '../../lib/permissions';
 import { formatDate } from '../../lib/formatters';
+import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
+import { ModalCompartirDossier } from '../superadmin/ModalCompartirDossier';
 import { 
   ShieldCheck, 
   Users, 
@@ -17,7 +19,10 @@ import {
   Trash2, 
   Power, 
   Info,
-  ShieldAlert
+  ShieldAlert,
+  Download,
+  Sparkles,
+  Share2
 } from 'lucide-react';
 
 export function UsuariosRolesView() {
@@ -25,6 +30,8 @@ export function UsuariosRolesView() {
   const { roles, saveRole, deleteRole } = usePermissions();
 
   const [activeTab, setActiveTab] = useState('usuarios'); // 'usuarios' | 'roles'
+  const [downloadingManual, setDownloadingManual] = useState(false);
+  const [showSuperadminShare, setShowSuperadminShare] = useState(false);
 
   // Modales
   const [showNewUserModal, setShowNewUserModal] = useState(false);
@@ -145,6 +152,18 @@ export function UsuariosRolesView() {
     setShowRoleModal(false);
   };
 
+  const handleDownloadManual = async () => {
+    setDownloadingManual(true);
+    try {
+      await downloadManualAdministradorPdf();
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el manual en PDF.');
+    } finally {
+      setDownloadingManual(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
@@ -159,7 +178,30 @@ export function UsuariosRolesView() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* Opción de descarga del manual de usuario en PDF */}
+          <button
+            onClick={handleDownloadManual}
+            disabled={downloadingManual}
+            className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-bold text-xs sm:text-sm border border-stone-300 shadow-sm flex items-center gap-1.5 transition-all"
+            title="Descargar Manual Operativo Completo en PDF"
+          >
+            <Download className="w-4 h-4 text-lumia-600" />
+            <span>{downloadingManual ? 'Descargando...' : 'Manual (PDF)'}</span>
+          </button>
+
+          {/* Opción exclusiva de Superadministrador para compartir enlace */}
+          {isSuperadmin && (
+            <button
+              onClick={() => setShowSuperadminShare(true)}
+              className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm shadow-sm flex items-center gap-1.5 transition-all"
+              title="Compartir Enlace Oficial de Funciones del Sistema (Exclusivo Superadmin)"
+            >
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              <span>Compartir Funciones</span>
+            </button>
+          )}
+
           {activeTab === 'usuarios' ? (
             <button
               onClick={() => setShowNewUserModal(true)}
@@ -584,6 +626,14 @@ export function UsuariosRolesView() {
             </button>
           </div>
         </Modal>
+      )}
+
+      {/* Modal exclusivo de Superadministrador para compartir enlace */}
+      {showSuperadminShare && (
+        <ModalCompartirDossier
+          isOpen={showSuperadminShare}
+          onClose={() => setShowSuperadminShare(false)}
+        />
       )}
     </div>
   );

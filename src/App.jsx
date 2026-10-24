@@ -20,6 +20,7 @@ import { AlertasCenterView } from './components/alertas/AlertasCenterView';
 import { UsuariosRolesView } from './components/usuarios/UsuariosRolesView';
 import { ImportExportView } from './components/import_export/ImportExportView';
 import { EstadisticasView } from './components/estadisticas/EstadisticasView';
+import { DossierFuncionesView } from './components/public/DossierFuncionesView';
 
 // Modales Globales
 import { ModalNuevoAnimal } from './components/animales/ModalNuevoAnimal';
@@ -30,11 +31,32 @@ function MainApp() {
   const { currentUser } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
 
+  // Detectar si se ingresó mediante el enlace oficial de funciones generado por Superadmin
+  const [isDossierMode, setIsDossierMode] = useState(() => {
+    return typeof window !== 'undefined' && window.location.search.includes('dossier=true');
+  });
+
   // Modales compartidos
   const [showNewAnimalModal, setShowNewAnimalModal] = useState(false);
   const [showNewReportModal, setShowNewReportModal] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState(null);
   const [editingAnimal, setEditingAnimal] = useState(null);
+
+  // Si se accede mediante el link oficial de funciones (compartido por Superadmin)
+  if (isDossierMode || currentView === 'dossier') {
+    return (
+      <DossierFuncionesView
+        onBackToApp={() => {
+          setIsDossierMode(false);
+          if (window.history.pushState) {
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({ path: cleanUrl }, '', cleanUrl);
+          }
+          setCurrentView('dashboard');
+        }}
+      />
+    );
+  }
 
   // Si no está autenticado, mostrar pantalla de Login
   if (!currentUser) {

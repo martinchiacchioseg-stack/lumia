@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../common/Badge';
 import { formatDate, isOverdue, isDueSoon } from '../../lib/formatters';
+import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
+import { ModalCompartirDossier } from '../superadmin/ModalCompartirDossier';
 import { 
   Dog, 
   HeartHandshake, 
@@ -15,13 +17,33 @@ import {
   ArrowRight, 
   Calendar,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  Download,
+  BookOpen
 } from 'lucide-react';
 
 export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport, onSelectAnimal }) {
   const { currentUser } = useAuth();
   const { animales, adopciones, seguimientos, eventosSalud, reportesCalle, adoptantes } = useData();
   const { hasPermission } = usePermissions();
+
+  const [downloadingManual, setDownloadingManual] = useState(false);
+  const [showSuperadminShare, setShowSuperadminShare] = useState(false);
+
+  const isSuperadmin = currentUser?.rol === 'Superadministrador';
+  const isAdminOrSuper = currentUser?.rol === 'Administrador' || isSuperadmin;
+
+  const handleDownloadManual = async () => {
+    setDownloadingManual(true);
+    try {
+      await downloadManualAdministradorPdf();
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el manual en PDF.');
+    } finally {
+      setDownloadingManual(false);
+    }
+  };
 
   // Métricas
   const activeAnimals = animales.filter(a => !a.archivado && a.estado_caso !== 'adoptado' && a.estado_caso !== 'fallecido');
@@ -94,6 +116,31 @@ export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport
               <AlertTriangle className="w-4 h-4 text-amber-300" />
               <span>Ver {overdueFollowups.length + upcomingVaccines.length + newStreetReports.length} alertas</span>
             </button>
+
+            {/* Opción de descarga del manual para el Administrador */}
+            {isAdminOrSuper && (
+              <button
+                onClick={handleDownloadManual}
+                disabled={downloadingManual}
+                className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm transition-colors border border-white/30 flex items-center gap-1.5 shadow-sm"
+                title="Descargar Manual Operativo Completo en PDF"
+              >
+                <Download className="w-4 h-4 text-white" />
+                <span>{downloadingManual ? 'Generando...' : 'Manual de Usuario (PDF)'}</span>
+              </button>
+            )}
+
+            {/* Opción exclusiva del Superadministrador: Generar/Compartir Link de Funciones */}
+            {isSuperadmin && (
+              <button
+                onClick={() => setShowSuperadminShare(true)}
+                className="px-4 py-2 rounded-xl bg-amber-400 text-amber-950 font-bold text-xs sm:text-sm hover:bg-amber-300 transition-colors shadow-sm flex items-center gap-1.5"
+                title="Compartir Enlace Oficial de Funciones del Sistema"
+              >
+                <Sparkles className="w-4 h-4 text-amber-900" />
+                <span>Compartir Funciones (Link)</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -358,6 +405,14 @@ export function DashboardView({ setCurrentView, onOpenNewAnimal, onOpenNewReport
           </button>
         </div>
       </div>
+
+      {/* Modal exclusivo de Superadministrador para compartir enlace */}
+      {showSuperadminShare && (
+        <ModalCompartirDossier
+          isOpen={showSuperadminShare}
+          onClose={() => setShowSuperadminShare(false)}
+        />
+      )}
     </div>
   );
 }
