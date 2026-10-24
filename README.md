@@ -23,19 +23,25 @@ Abre tu navegador en `http://localhost:5173`.
 
 ---
 
-## 🔑 Cuentas Iniciales para Pruebas
+## 🔑 Autenticación y Control de Acceso (Seguridad Reforzada)
 
-En la pantalla de inicio de sesión se encuentran disponibles botones de acceso directo para autocompletar estas credenciales:
+LUMIA cuenta con un esquema de autenticación blindado que cumple con la Ley 25.326 y las mejores prácticas de ciberseguridad:
 
-1. **Superadministrador (Dueño técnico):**
-   - **Email:** `martinchiacchio.seg@gmail.com`
-   - **Contraseña inicial:** `Chiacchio@1938`
-   - **Comportamiento:** Requiere cambio obligatorio de contraseña en el primer ingreso. Acceso total a auditoría, usuarios y configuración.
+1. **Contraseñas Temporales CSPRNG (48 horas):**
+   - No existen contraseñas por defecto ni códigos predecibles.
+   - Todo usuario nuevo recibe una clave única generada mediante generador criptográficamente seguro (CSPRNG) de al menos 14 caracteres.
+   - La clave temporal se muestra **una sola vez** al creador del usuario y caduca automáticamente a las 48 horas.
+   - En el primer inicio de sesión se exige el cambio forzoso de contraseña (mínimo 10 caracteres, política de complejidad y lista negra de contraseñas vulnerables).
+   - Almacenamiento seguro con hash `bcrypt` (factor de costo 12 / 10).
+   - Protección contra fuerza bruta: bloqueo temporal de 15 minutos tras 5 intentos fallidos y mensajes genéricos que impiden la enumeración de usuarios.
 
-2. **Administradora (Rescatista operativa):**
-   - **Email:** `genesisbustamante88@gmail.com`
-   - **Contraseña temporal:** `123456`
-   - **Comportamiento:** Requiere cambio obligatorio de contraseña en el primer ingreso (mínimo 8 caracteres, no puede ser `123456` ni igual a la anterior). Gestión de animales, adopciones, seguimientos y creación de usuarios.
+2. **Acceso Biométrico con Passkeys (WebAuthn / FIDO2):**
+   - Soporte nativo para inicio de sesión con huella dactilar, Face ID o Windows Hello mediante la API WebAuthn (`@simplewebauthn`).
+   - Cero almacenamiento de datos biométricos en servidores (los rasgos biométricos nunca abandonan el enclave seguro del dispositivo del usuario).
+   - Panel de "Mis Dispositivos" para enrolar y desvincular llaves de acceso en cualquier momento.
+
+3. **Asistente de IA "Patita Aliada":**
+   - Chat flotante impulsado por Google Gemini con instrucciones de sistema en servidor seguro y rate limiting por usuario.
 
 ---
 

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PermissionsProvider } from './context/PermissionsContext';
 import { DataProvider } from './context/DataContext';
+import { PatitaChatProvider } from './context/PatitaChatContext';
+import { PatitaAliadaChat } from './components/ia/PatitaAliadaChat';
 
 // Componentes de Layout
 import { Header } from './components/layout/Header';
@@ -34,10 +36,13 @@ function MainApp() {
   const { currentUser } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // Detectar si se ingresó mediante el enlace oficial de funciones generado por Superadmin
-  const [isDossierMode, setIsDossierMode] = useState(() => {
-    return typeof window !== 'undefined' && window.location.search.includes('dossier=true');
-  });
+  // Limpieza inmediata de parámetros de token o dossier antiguos en la URL
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.search.includes('dossier') || window.location.search.includes('token'))) {
+      const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
 
   // Detectar si se ingresó mediante el enlace libre del Portal de Adopciones y Noticias
   const [isPortalMode, setIsPortalMode] = useState(() => {
@@ -66,25 +71,18 @@ function MainApp() {
     );
   }
 
-  // Si se accede mediante el link oficial de funciones (compartido por Superadmin)
-  if (isDossierMode || currentView === 'dossier') {
-    return (
-      <DossierFuncionesView
-        onBackToApp={() => {
-          setIsDossierMode(false);
-          if (window.history.pushState) {
-            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.pushState({ path: cleanUrl }, '', cleanUrl);
-          }
-          setCurrentView('dashboard');
-        }}
-      />
-    );
-  }
-
   // Si no está autenticado, mostrar pantalla de Login
   if (!currentUser) {
     return <LoginView />;
+  }
+
+  // Vista protegida del Dossier Técnico de Capacidades (solo Superadministrador autenticado)
+  if (currentView === 'dossier' && currentUser?.rol === 'Superadministrador') {
+    return (
+      <DossierFuncionesView
+        onBackToApp={() => setCurrentView('dashboard')}
+      />
+    );
   }
 
   const handleEditAnimal = (animal) => {
@@ -195,6 +193,8 @@ function MainApp() {
           onEditAnimal={handleEditAnimal}
         />
       )}
+      {/* Asistente Flotante con IA Patita Aliada */}
+      <PatitaAliadaChat />
     </div>
   );
 }
@@ -204,7 +204,9 @@ export default function App() {
     <AuthProvider>
       <PermissionsProvider>
         <DataProvider>
-          <MainApp />
+          <PatitaChatProvider>
+            <MainApp />
+          </PatitaChatProvider>
         </DataProvider>
       </PermissionsProvider>
     </AuthProvider>

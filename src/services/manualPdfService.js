@@ -200,12 +200,12 @@ export async function generateManualAdministradorPdf() {
       [
         'ADMINISTRADOR\n(Rescatista Responsable)',
         'Control total del circuito operativo: Animales, Adoptantes, Contratos de Adopción, Seguimientos, Vacunas y Reportes. Puede crear otros usuarios y asignarles roles.',
-        'Contraseña temporal inicial (123456) con cambio forzoso obligatorio en 1er ingreso.'
+        'Contraseña temporal aleatoria CSPRNG (48h de caducidad) con cambio forzoso a clave definitiva de 10+ caracteres en 1er ingreso.'
       ],
       [
         'RESCATISTA\n(Gestión Operativa)',
         'Gestiona sus casos asignados, fichas clínicas, acuerdos de adopción y actualiza las fotos y notas de seguimiento.',
-        'Contraseña temporal con cambio obligatorio por política de seguridad.'
+        'Contraseña temporal aleatoria CSPRNG (48h) con cambio forzoso de clave y activación optativa de huella o rostro.'
       ],
       [
         'COLABORADORA\n(Relevamiento de Calle)',
@@ -248,17 +248,30 @@ export async function generateManualAdministradorPdf() {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
-  doc.text('3. Primer Ingreso al Sistema y PWA (Mobile-First)', 14, yAfterRoles + 28);
+  doc.text('3. Acceso Biométrico Seguro (Huella o Rostro / Passkeys) — Ley 25.326', 14, yAfterRoles + 26);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
+  doc.setFontSize(8.4);
   doc.setTextColor(43, 35, 33);
   doc.text(
-    '• Acceso Web y Móvil: La aplicación es una Progressive Web App (PWA). Se puede "Instalar en la pantalla de inicio" ' +
-    'tanto en teléfonos Android como en iPhone para funcionar como una aplicación móvil sin ocupar espacio de tienda.\n' +
-    '• Sincronización Local: Si se pierde la conectividad celular durante un rescate de calle, la plataforma almacena ' +
-    'las acciones en el almacenamiento local y las sincroniza en cuanto se recupera el acceso.',
-    14, yAfterRoles + 34, { maxWidth: pageWidth - 28, lineHeightFactor: 1.3 }
+    '• Activación: Al establecer su clave definitiva, el usuario puede tocar "Activar" para registrar la huella o rostro de su teléfono o computadora. También puede activarlo o desvincular equipos desde su perfil.\n' +
+    '• Privacidad Estricta (Ley 25.326): LUMIA jamás recibe, guarda ni transmite datos biométricos. La verificación se realiza 100% en el chip seguro del dispositivo del usuario (WebAuthn estándar).\n' +
+    '• Recuperación por pérdida: Si el usuario pierde su equipo, un Administrador o Superadministrador puede revocar sus passkeys vinculadas y emitir una nueva clave temporal de 48h desde el panel de usuarios.',
+    14, yAfterRoles + 32, { maxWidth: pageWidth - 28, lineHeightFactor: 1.25 }
+  );
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(PRIMARY_RGB.r, PRIMARY_RGB.g, PRIMARY_RGB.b);
+  doc.text('4. Asistente con IA "Patita Aliada" y Funcionamiento PWA', 14, yAfterRoles + 52);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.4);
+  doc.setTextColor(43, 35, 33);
+  doc.text(
+    '• Patita Aliada (IA): Asistente flotante con Gemini Flash para orientación en primeros auxilios, Ley 14.346 y redacción de adopciones. Accesible para todos los roles operativos.\n' +
+    '• Instalación PWA: Se instala como app nativa en Android e iPhone desde el navegador sin ocupar espacio.',
+    14, yAfterRoles + 58, { maxWidth: pageWidth - 28, lineHeightFactor: 1.25 }
   );
 
   // =========================================================================
@@ -538,9 +551,9 @@ export async function generateManualAdministradorPdf() {
   doc.setTextColor(43, 35, 33);
   doc.text(
     'Para solicitudes de nuevos módulos, auditorías de base de datos o ampliación de infraestructura en la nube,\n' +
-    'el Administrador debe contactar al Superadministrador técnico asignado:\n' +
-    '• Correo Técnico: martinchiacchio.seg@gmail.com\n' +
-    '• Plataforma: Patita Aliada / LUMIA Argentina • Base de Datos: Neon PostgreSQL',
+    'el Administrador debe contactar al canal de Superadministración técnica oficial de LUMIA:\n' +
+    '• Canal Institucional: Mensajes del Sistema / Superadministración Técnica\n' +
+    '• Plataforma: LUMIA Argentina • Base de Datos: Neon PostgreSQL Protegida con RLS',
     22, 163, { lineHeightFactor: 1.3 }
   );
 

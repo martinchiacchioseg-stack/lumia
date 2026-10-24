@@ -26,9 +26,7 @@ export function BottomNav({ currentView, setCurrentView }) {
   const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isSuperadmin = 
-    currentUser?.rol === 'Superadministrador' || 
-    currentUser?.email === 'martinchiacchio.seg@gmail.com';
+  const isSuperadmin = currentUser?.rol === 'Superadministrador';
 
   const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 

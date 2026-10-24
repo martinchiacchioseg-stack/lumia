@@ -3,13 +3,16 @@
 export const INITIAL_USERS = [
   {
     id: 'usr-superadmin',
-    nombre: 'Martín Chiacchio',
+    nombre: 'Superadministración LUMIA',
     email: 'martinchiacchio.seg@gmail.com',
     telefono: '+5491122334455',
     rol: 'Superadministrador',
     rol_id: 'rol-superadmin',
     activo: true,
     must_change_password: true,
+    is_temp_password: true,
+    temp_password_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+    password_hash: '$2b$10$f69yP7y44K3y5f2X2gH9zO5.X4.7h8K8V9L3mQ1W2E3R4T5Y6U7I8',
     created_at: '2026-10-01T10:00:00.000Z',
     ultimo_ingreso: null
   },
@@ -22,6 +25,9 @@ export const INITIAL_USERS = [
     rol_id: 'rol-admin',
     activo: true,
     must_change_password: true,
+    is_temp_password: true,
+    temp_password_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+    password_hash: '$2b$10$f69yP7y44K3y5f2X2gH9zO5.X4.7h8K8V9L3mQ1W2E3R4T5Y6U7I8',
     created_at: '2026-10-01T10:30:00.000Z',
     ultimo_ingreso: null
   },
@@ -34,6 +40,9 @@ export const INITIAL_USERS = [
     rol_id: 'rol-rescatista',
     activo: true,
     must_change_password: false,
+    is_temp_password: false,
+    temp_password_expires_at: null,
+    password_hash: '$2b$10$f69yP7y44K3y5f2X2gH9zO5.X4.7h8K8V9L3mQ1W2E3R4T5Y6U7I8',
     created_at: '2026-10-05T12:00:00.000Z',
     ultimo_ingreso: '2026-10-21T18:00:00.000Z'
   }
@@ -429,9 +438,9 @@ export const INITIAL_NEWS = [
 export const INITIAL_SYSTEM_MESSAGES = [
   {
     id: 'msg-hoy-actualizaciones-20261024',
-    remitente_nombre: 'Martín Chiacchio',
+    remitente_nombre: 'Superadministración LUMIA',
     remitente_rol: 'Superadministrador Técnico',
-    remitente_email: 'martinchiacchio.seg@gmail.com',
+    remitente_email: 'soporte@patitaaliada.org.ar',
     destinatario: 'Administración y Coordinación de Rescate',
     asunto: '🚀 Informe Oficial: Actualizaciones y Nuevos Módulos Implementados en LUMIA',
     categoria: 'Actualización Mayor del Sistema',
@@ -439,15 +448,15 @@ export const INITIAL_SYSTEM_MESSAGES = [
     fecha: '24/10/2026',
     hora: '03:15',
     leido: false,
-    resumen: 'Resumen completo de las 8 mejoras técnicas, nuevos módulos y herramientas desplegadas hoy para la gestión operativa, difusión en redes y base de datos cloud.',
+    resumen: 'Resumen completo de las mejoras técnicas, seguridad biométrica, asistente de IA Patita Aliada y herramientas desplegadas hoy.',
     contenido_detallado: [
       {
         titulo: '1. Base de Datos en Producción (Neon PostgreSQL - AWS São Paulo)',
         detalle: 'Conectamos exitosamente la base de datos de producción con el esquema relacional completo: tablas de animales, adoptantes con protección de datos sensibles (Ley 25.326), contratos, bitácora de seguimiento en 6 etapas, eventos de salud y reportes de calle. Se inicializó la vista inteligente vista_semaforo_adopciones que calcula automáticamente las alertas verdes, amarillas y rojas en tiempo real.'
       },
       {
-        titulo: '2. Limpieza de Portada de Inicio de Sesión',
-        detalle: 'Se removió el bloque provisional de "cuentas precargadas para evaluación", dejando la pantalla de bienvenida 100% limpia y formal. Tu cuenta de administradora (genesisbustamante88@gmail.com) cuenta con cambio obligatorio de contraseña en el primer acceso para garantizar la seguridad de los casos.'
+        titulo: '2. Seguridad Reforzada, Claves CSPRNG (48h) y Acceso Biométrico (Passkeys)',
+        detalle: 'Las cuentas nuevas reciben una contraseña aleatoria criptográficamente segura de un solo uso con validez de 48 horas y cambio obligatorio (mínimo 10 caracteres). Además, ya podés activar el ingreso con huella digital o reconocimiento facial (WebAuthn) desde tu celular o computadora sin que el sistema almacene datos biométricos.'
       },
       {
         titulo: '3. Rediseño e Identidad Visual Oficial LUMIA en Portada',
@@ -455,11 +464,11 @@ export const INITIAL_SYSTEM_MESSAGES = [
       },
       {
         titulo: '4. Manual Operativo de Gestión en PDF (6 Páginas Oficiales)',
-        detalle: 'Ya contás con el botón "Manual (PDF)" en el menú superior, en el Dashboard y en la sección de usuarios. Genera un documento PDF institucional con portada formal, diagramas, protocolos de rescate, etapas de adopción y resguardo legal, listo para imprimir o capacitar a nuevas rescatistas.'
+        detalle: 'Ya contás con el botón "Manual (PDF)" en el menú superior, en el Dashboard y en la sección de usuarios. Genera un documento PDF institucional con portada formal, diagramas, protocolos de rescate, etapas de adopción, seguridad biométrica y resguardo legal, listo para imprimir o capacitar a nuevas rescatistas.'
       },
       {
-        titulo: '5. Enlace Oficial de Funciones Exclusivo del Superadministrador',
-        detalle: 'Implementamos una herramienta de seguridad que solo yo como Superadministrador puedo activar. Genera un enlace oficial protegido que despliega el catálogo interactivo de las 13 capacidades del sistema para presentar la plataforma a instituciones, veterinarias o autoridades sin exponer claves.'
+        titulo: '5. Asistente de IA "Patita Aliada" Integrado',
+        detalle: 'Sumamos el botón flotante de Patita Aliada (impulsado por Gemini Flash en servidor seguro) para responder consultas de primeros auxilios, legislación argentina (Ley 14.346), redacción de publicaciones de adopción y acompañamiento emocional para rescatistas.'
       },
       {
         titulo: '6. Generador de Flyers para Redes Sociales en cada Ficha',

@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox } from 'lucide-react';
+import { Bell, LogOut, ShieldCheck, Database, Cloud, Download, Sparkles, BookOpen, Inbox, Fingerprint } from 'lucide-react';
 import { isOverdue, isDueSoon } from '../../lib/formatters';
 import { Logo } from '../common/Logo';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
 import { ModalCompartirDossier } from '../superadmin/ModalCompartirDossier';
+import { MisDispositivosModal } from '../auth/MisDispositivosModal';
 
 export function Header({ currentView, setCurrentView }) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isPasskeySupported } = useAuth();
   const { seguimientos, eventosSalud, reportesCalle, mensajesSistema } = useData();
 
   const [downloadingManual, setDownloadingManual] = useState(false);
   const [showSuperadminShare, setShowSuperadminShare] = useState(false);
+  const [showDevicesModal, setShowDevicesModal] = useState(false);
 
   const isSuperadmin = currentUser?.rol === 'Superadministrador';
   const isAdminOrSuper = currentUser?.rol === 'Administrador' || isSuperadmin;
@@ -143,6 +145,17 @@ export function Header({ currentView, setCurrentView }) {
                 )}
               </button>
 
+              {/* Acceso Biométrico / Passkeys */}
+              {isPasskeySupported && (
+                <button
+                  onClick={() => setShowDevicesModal(true)}
+                  className="p-2.5 rounded-2xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                  title="Configurar Huella o Rostro (Passkeys)"
+                >
+                  <Fingerprint className="w-5 h-5 text-lumia-600" />
+                </button>
+              )}
+
               {/* Perfil del Usuario */}
               <div className="flex items-center gap-2 pl-2 border-l border-stone-200">
                 <div className="text-right hidden sm:block">
@@ -153,7 +166,11 @@ export function Header({ currentView, setCurrentView }) {
                   </div>
                 </div>
 
-                <div className="w-9 h-9 rounded-2xl bg-lumia-50 text-lumia-700 font-bold text-sm flex items-center justify-center border border-lumia-200 shadow-sm">
+                <div 
+                  onClick={() => isPasskeySupported && setShowDevicesModal(true)}
+                  className="w-9 h-9 rounded-2xl bg-lumia-50 text-lumia-700 font-bold text-sm flex items-center justify-center border border-lumia-200 shadow-sm cursor-pointer hover:bg-lumia-100 transition-colors"
+                  title="Administrar dispositivos y biometría"
+                >
                   {currentUser?.nombre ? currentUser.nombre.charAt(0).toUpperCase() : 'U'}
                 </div>
 
@@ -170,11 +187,20 @@ export function Header({ currentView, setCurrentView }) {
         </div>
       </header>
 
-      {/* Modal exclusivo de Superadministrador para compartir enlace */}
+      {/* Modal de Dispositivos Biométricos Passkey */}
+      {showDevicesModal && (
+        <MisDispositivosModal
+          isOpen={showDevicesModal}
+          onClose={() => setShowDevicesModal(false)}
+        />
+      )}
+
+      {/* Modal exclusivo de Superadministrador para dossier autenticado */}
       {showSuperadminShare && (
         <ModalCompartirDossier
           isOpen={showSuperadminShare}
           onClose={() => setShowSuperadminShare(false)}
+          onOpenInternalDossier={() => setCurrentView('dossier')}
         />
       )}
     </>

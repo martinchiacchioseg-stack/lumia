@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from '../common/Logo';
+import { useAuth } from '../../context/AuthContext';
 import { downloadManualAdministradorPdf } from '../../services/manualPdfService';
 import { 
   ShieldCheck, 
@@ -17,17 +18,18 @@ import {
   Smartphone, 
   Download, 
   CheckCircle2, 
-  Share2, 
   ArrowLeft,
   Sparkles,
-  ExternalLink,
-  Copy,
   Layers
 } from 'lucide-react';
 
 export function DossierFuncionesView({ onBackToApp }) {
+  const { currentUser } = useAuth();
   const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
+
+  if (currentUser?.rol !== 'Superadministrador') {
+    return null;
+  }
 
   const handleDownloadManual = async () => {
     setDownloading(true);
@@ -39,13 +41,6 @@ export function DossierFuncionesView({ onBackToApp }) {
     } finally {
       setDownloading(false);
     }
-  };
-
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}${window.location.pathname}?dossier=true&token=patita-superadmin-auth`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
   };
 
   const MODULOS_DETALLADOS = [
@@ -310,28 +305,12 @@ export function DossierFuncionesView({ onBackToApp }) {
             para rescatistas independientes de animales en la República Argentina.
           </p>
 
-          {/* Caja con botón para copiar enlace oficial */}
+          {/* Aviso de seguridad de sesión */}
           <div className="inline-flex flex-wrap items-center justify-center gap-3 bg-white p-3 rounded-2xl border border-stone-200 shadow-sm max-w-xl mx-auto">
             <div className="flex items-center gap-2 text-xs text-stone-600 px-2 font-medium">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Enlace oficial validado por el Superadministrador</span>
+              <span>Vista protegida por sesión autenticada de Superadministración</span>
             </div>
-            <button
-              onClick={handleCopyLink}
-              className="px-3.5 py-1.5 rounded-xl bg-lumia-500 hover:bg-lumia-600 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  <span>¡Enlace Copiado!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-white" />
-                  <span>Copiar Enlace</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>

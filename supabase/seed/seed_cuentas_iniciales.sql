@@ -93,7 +93,9 @@ BEGIN
         (sololectura_role_id, 'estadisticas', 'ver', true, false)
     ON CONFLICT (rol_id, modulo, accion) DO NOTHING;
 
-    -- 3. CREACIÓN DE USUARIOS EN AUTH.USERS (CONTRASEÑAS HASHEADAS CON BCRYPT)
+    -- 3. CREACIÓN DE USUARIOS EN AUTH.USERS (CONTRASEÑAS TEMPORALES ALEATORIAS CRIPTOGRÁFICAS)
+    -- NOTA DE SEGURIDAD: Ninguna contraseña fija o en texto plano se almacena en el repositorio.
+    -- Las claves iniciales usan saltos criptográficos aleatorios con bcrypt y requieren cambio forzoso.
     -- Superadministrador
     IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'martinchiacchio.seg@gmail.com') THEN
         INSERT INTO auth.users (
@@ -104,7 +106,7 @@ BEGIN
             'authenticated',
             'authenticated',
             'martinchiacchio.seg@gmail.com',
-            crypt('Chiacchio@1938', gen_salt('bf')),
+            crypt(encode(gen_random_bytes(16), 'hex'), gen_salt('bf', 12)),
             NOW(),
             '{"provider":"email","providers":["email"]}',
             '{"nombre":"Martín Chiacchio"}',
@@ -134,7 +136,7 @@ BEGIN
             'authenticated',
             'authenticated',
             'genesisbustamante88@gmail.com',
-            crypt('123456', gen_salt('bf')),
+            crypt(encode(gen_random_bytes(16), 'hex'), gen_salt('bf', 12)),
             NOW(),
             '{"provider":"email","providers":["email"]}',
             '{"nombre":"Génesis Bustamante"}',
@@ -148,6 +150,11 @@ BEGIN
             'Génesis Bustamante',
             'genesisbustamante88@gmail.com',
             '+5491199887766',
+            admin_role_id,
+            true,
+            true
+        );
+    END IF;
             admin_role_id,
             true,
             true

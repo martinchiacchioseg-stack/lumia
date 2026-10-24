@@ -40,9 +40,7 @@ export function PanelSuperadminView() {
   } = useData();
 
   // Verificar rol de Superadministrador
-  const isSuperadmin = 
-    currentUser?.rol === 'Superadministrador' || 
-    currentUser?.email === 'martinchiacchio.seg@gmail.com';
+  const isSuperadmin = currentUser?.rol === 'Superadministrador';
 
   const [activeTab, setActiveTab] = useState('config'); // 'config' | 'noticias'
   
@@ -80,7 +78,7 @@ export function PanelSuperadminView() {
           Acceso Restringido a Superadministración
         </h2>
         <p className="text-sm text-stone-600 max-w-md mx-auto mb-6">
-          Esta consola de control global solo puede ser operada por el Superadministrador de LUMIA (Martín Chiacchio).
+          Esta consola de control global solo puede ser operada por el perfil Superadministrador de LUMIA.
         </p>
       </div>
     );
@@ -159,7 +157,7 @@ export function PanelSuperadminView() {
                 Consola Exclusiva Superadmin
               </span>
               <span className="text-xs text-stone-400">
-                Martín Chiacchio
+                Gestión Institucional
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">

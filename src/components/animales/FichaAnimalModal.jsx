@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePermissions } from '../../context/PermissionsContext';
+import { usePatitaChat } from '../../context/PatitaChatContext';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { Logo } from '../common/Logo';
@@ -27,10 +28,12 @@ import {
   CheckCircle2,
   Sparkles,
   QrCode,
-  Share2
+  Share2,
+  PawPrint
 } from 'lucide-react';
 
 export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
+  const { openChatWithAnimal, canUseChat } = usePatitaChat() || {};
   const { 
     eventosSalud, 
     addEventoSalud, 
@@ -210,6 +213,17 @@ export function FichaAnimalModal({ isOpen, onClose, animal, onEditAnimal }) {
             <Share2 className="w-4 h-4 text-stone-900" />
             <span>Flyer Redes</span>
           </button>
+
+          {canUseChat && openChatWithAnimal && (
+            <button
+              onClick={() => openChatWithAnimal(animal)}
+              className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-lumia-900/60 hover:bg-lumia-900 border border-white/20 text-white font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              title="Consultar a Patita Aliada sobre este animal"
+            >
+              <PawPrint className="w-4 h-4 text-lumia-300" />
+              <span>Consultar a Patita Aliada</span>
+            </button>
+          )}
 
           <button
             onClick={handleDownloadOfficialPdf}

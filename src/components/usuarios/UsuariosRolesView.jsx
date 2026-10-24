@@ -62,7 +62,7 @@ export function UsuariosRolesView() {
     if (!userForm.nombre || !userForm.email) return;
 
     const selectedRole = roles.find(r => r.id === userForm.rol_id);
-    const created = await createUser({
+    const result = await createUser({
       ...userForm,
       rolNombre: selectedRole?.nombre || 'Rescatista'
     });
@@ -75,20 +75,29 @@ export function UsuariosRolesView() {
       rol_id: roles.find(r => r.nombre === 'Rescatista')?.id || roles[0]?.id
     });
 
-    // Mostrar contraseña temporal generada
+    // Mostrar contraseña temporal CSPRNG UNA SOLA VEZ
     setTempPasswordModal({
       isOpen: true,
-      email: created.email,
-      pass: created.custom_password || 'temporal-patita'
+      email: result.user?.email || userForm.email,
+      pass: result.oneTimeTempPassword,
+      revokedPasskeys: 0
     });
   };
 
   const handleResetPassword = async (user) => {
-    const tempPass = await resetUserPassword(user.id);
+    if (
+      !window.confirm(
+        `¿Restablecer el acceso de ${user.nombre} (${user.email})?\n\nSe revocarán todas sus Passkeys biométricas registradas (por pérdida o cambio de dispositivo) y se generará una nueva clave temporal aleatoria válida por 48 horas.`
+      )
+    ) {
+      return;
+    }
+    const result = await resetUserPassword(user.id, { revokePasskeys: true });
     setTempPasswordModal({
       isOpen: true,
       email: user.email,
-      pass: tempPass
+      pass: result.oneTimeTempPassword,
+      revokedPasskeys: result.revokedPasskeysCount || 0
     });
   };
 
@@ -318,14 +327,15 @@ export function UsuariosRolesView() {
                             </button>
                           )}
 
-                          {/* Restablecer Contraseña */}
+                          {/* Restablecer Contraseña y Revocar Passkeys */}
                           {!isSuper && (
                             <button
                               onClick={() => handleResetPassword(user)}
-                              className="p-1.5 rounded-xl text-stone-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                              title="Restablecer contraseña temporal"
+                              className="px-2.5 py-1.5 rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
+                              title="Revocar Passkeys biométricas y emitir nueva clave temporal (48h)"
                             >
-                              <KeyRound className="w-4 h-4" />
+                              <KeyRound className="w-3.5 h-3.5" />
+                              <span className="hidden xl:inline">Restablecer / Revocar Passkeys</span>
                             </button>
                           )}
                         </td>
@@ -598,32 +608,53 @@ export function UsuariosRolesView() {
         </Modal>
       )}
 
-      {/* Modal Aviso de Contraseña Temporal Generada */}
+      {/* Modal Aviso de Contraseña Temporal Generada (Se muestra UNA SOLA VEZ) */}
       {tempPasswordModal.isOpen && (
         <Modal
           isOpen={tempPasswordModal.isOpen}
-          onClose={() => setTempPasswordModal({ isOpen: false, email: '', pass: '' })}
-          title="Contraseña Temporal Generada"
-          subtitle="Copiá esta clave y hacésela llegar a la persona para su primer ingreso"
+          onClose={() => setTempPasswordModal({ isOpen: false, email: '', pass: '', revokedPasskeys: 0 })}
+          title="Clave Temporal de Un Solo Uso (48h)"
+          subtitle="Esta contraseña aleatoria se muestra UNA SOLA VEZ y no volverá a ser visible"
           maxWidth="max-w-md"
         >
           <div className="space-y-4">
-            <div className="p-4 rounded-3xl bg-patita-50 border border-patita-200 text-center space-y-2">
-              <p className="text-xs text-stone-600 font-medium">Contraseña asignada para {tempPasswordModal.email}:</p>
-              <div className="py-2 px-4 rounded-2xl bg-white border border-patita-300 font-mono font-extrabold text-lg text-patita-700 select-all">
+            <div className="p-4 rounded-3xl bg-patita-50 border border-patita-200 text-center space-y-2.5">
+              <p className="text-xs text-stone-600 font-medium">
+                Clave temporal generada para <strong>{tempPasswordModal.email}</strong>:
+              </p>
+              <div className="py-2.5 px-4 rounded-2xl bg-white border border-patita-300 font-mono font-extrabold text-lg text-patita-700 select-all tracking-wider">
                 {tempPasswordModal.pass}
               </div>
-              <p className="text-[11px] text-patita-800">
-                ⚠️ El sistema le obligará a cambiarla de forma obligatoria antes de poder acceder a cualquier pantalla.
-              </p>
+              <div className="text-[11px] text-patita-900 space-y-1 text-left bg-white/70 p-3 rounded-2xl border border-patita-200/70">
+                <p>⏱️ <strong>Caducidad estricta:</strong> Vence a las <strong>48 horas</strong> de emitida.</p>
+                <p>🔒 <strong>Un solo uso:</strong> Al iniciar sesión obligará a definir una clave definitiva de al menos 10 caracteres.</p>
+                <p>👁️ <strong>Copiala ahora:</strong> Por seguridad solo se guarda su hash criptográfico y no podrá consultarse después de cerrar esta ventana.</p>
+                {tempPasswordModal.revokedPasskeys > 0 && (
+                  <p className="text-rose-700 font-bold">
+                    ✓ Se revocaron {tempPasswordModal.revokedPasskeys} dispositivo(s) Passkey vinculados previamente.
+                  </p>
+                )}
+              </div>
             </div>
 
-            <button
-              onClick={() => setTempPasswordModal({ isOpen: false, email: '', pass: '' })}
-              className="w-full py-2.5 rounded-xl bg-stone-900 text-white font-bold text-xs"
-            >
-              Entendido, ya la copié
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(tempPasswordModal.pass);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-xs"
+              >
+                Copiar clave
+              </button>
+              <button
+                type="button"
+                onClick={() => setTempPasswordModal({ isOpen: false, email: '', pass: '', revokedPasskeys: 0 })}
+                className="flex-1 py-2.5 rounded-xl bg-stone-900 text-white font-bold text-xs"
+              >
+                Entendido, cerrar
+              </button>
+            </div>
           </div>
         </Modal>
       )}

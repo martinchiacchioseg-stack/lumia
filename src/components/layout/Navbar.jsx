@@ -22,9 +22,7 @@ export function Navbar({ currentView, setCurrentView }) {
   const { hasPermission } = usePermissions();
   const { mensajesSistema } = useData();
 
-  const isSuperadmin = 
-    currentUser?.rol === 'Superadministrador' || 
-    currentUser?.email === 'martinchiacchio.seg@gmail.com';
+  const isSuperadmin = currentUser?.rol === 'Superadministrador';
 
   const unreadMessages = (mensajesSistema || []).filter(m => !m.leido).length;
 
