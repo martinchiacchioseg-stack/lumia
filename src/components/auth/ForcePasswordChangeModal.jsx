@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth, validateClientPasswordPolicy } from '../../context/AuthContext';
-import { ShieldAlert, CheckCircle2, KeyRound, Fingerprint, Sparkles } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, KeyRound, Fingerprint, Sparkles, Eye, EyeOff, Lock } from 'lucide-react';
 
 export function ForcePasswordChangeModal() {
   const {
@@ -15,6 +15,7 @@ export function ForcePasswordChangeModal() {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [biometricSuccess, setBiometricSuccess] = useState(false);
@@ -36,19 +37,24 @@ export function ForcePasswordChangeModal() {
     e.preventDefault();
     setError('');
 
+    if (!newPassword || newPassword.length < 10) {
+      setError('La nueva contraseña debe tener al menos 10 caracteres.');
+      return;
+    }
+
     if (!policyCheck.valid) {
       setError(policyCheck.message);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+      setError('Las contraseñas no coinciden. Verificá ambas casillas.');
       return;
     }
 
     setLoading(true);
     try {
-      await changePassword(oldPassword, newPassword);
+      await changePassword(oldPassword.trim() || '123456', newPassword.trim());
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -68,7 +74,7 @@ export function ForcePasswordChangeModal() {
       setTimeout(() => {
         setBiometricSuccess(false);
         setShowPostPasswordBiometricPrompt(false);
-      }, 1800);
+      }, 1500);
     } catch (err) {
       setError(err.message || 'No se pudo registrar el acceso biométrico en este dispositivo.');
     } finally {
@@ -77,65 +83,68 @@ export function ForcePasswordChangeModal() {
   };
 
   // PASO 2: PANTALLA INMEDIATA POST-CAMBIO DE CONTRASEÑA PARA ACTIVAR HUELLA / ROSTRO
-  if (!mustChange && showPostPasswordBiometricPrompt && isPasskeySupported) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-md animate-in fade-in">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200 text-center space-y-5">
-          <div className="w-16 h-16 rounded-3xl bg-lumia-100 text-lumia-600 flex items-center justify-center mx-auto shadow-sm">
-            <Fingerprint className="w-9 h-9" />
+  if (!mustChange) {
+    if (showPostPasswordBiometricPrompt && isPasskeySupported) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200 text-center space-y-5">
+            <div className="w-16 h-16 rounded-3xl bg-lumia-100 text-lumia-600 flex items-center justify-center mx-auto shadow-sm">
+              <Fingerprint className="w-9 h-9" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Contraseña actualizada con éxito
+              </span>
+              <h3 className="font-extrabold text-stone-900 text-lg sm:text-xl leading-snug">
+                ¿Querés ingresar con tu huella o reconocimiento facial la próxima vez?
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Podés vincular este dispositivo para entrar en un toque de forma rápida y segura. 
+                Cumpliendo la <strong>Ley 25.326</strong>, LUMIA nunca recibe ni almacena tus datos biométricos: la validación se hace dentro de tu teléfono o computadora.
+              </p>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs text-left flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {biometricSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>¡Listo! Tu huella / rostro quedó activado en este dispositivo.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleActivateBiometrics}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-sm shadow-md shadow-lumia-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  <span>{loading ? 'Activando...' : 'Activar huella / rostro'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setShowPostPasswordBiometricPrompt(false)}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm transition-all"
+                >
+                  Continuar al sistema
+                </button>
+              </div>
+            )}
           </div>
-
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Contraseña actualizada con éxito
-            </span>
-            <h3 className="font-extrabold text-stone-900 text-lg sm:text-xl leading-snug">
-              ¿Querés ingresar con tu huella o reconocimiento facial la próxima vez?
-            </h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
-              Podés vincular este dispositivo para entrar en un toque de forma rápida y segura. 
-              Cumpliendo la <strong>Ley 25.326</strong>, LUMIA nunca recibe ni almacena tus datos biométricos: la validación se hace dentro de tu teléfono o computadora.
-            </p>
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs text-left flex items-start gap-2">
-              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {biometricSuccess ? (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>¡Listo! Tu huella / rostro quedó activado en este dispositivo.</span>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleActivateBiometrics}
-                className="flex-1 py-3 px-4 rounded-2xl bg-lumia-500 hover:bg-lumia-600 text-white font-bold text-sm shadow-md shadow-lumia-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Fingerprint className="w-4 h-4" />
-                <span>{loading ? 'Activando...' : 'Activar'}</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => setShowPostPasswordBiometricPrompt(false)}
-                className="flex-1 py-3 px-4 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-sm transition-all"
-              >
-                Ahora no
-              </button>
-            </div>
-          )}
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   // PASO 1: CAMBIO OBLIGATORIO DE CONTRASEÑA TEMPORAL
@@ -149,7 +158,7 @@ export function ForcePasswordChangeModal() {
           <div>
             <h3 className="font-extrabold text-stone-900 text-lg">Cambio obligatorio de contraseña</h3>
             <p className="text-xs text-stone-500 mt-0.5">
-              Las claves temporales caducan a las 48 horas y son de un solo uso. Definí tu contraseña personal definitiva.
+              Bienvenida/o a LUMIA. Definí tu contraseña personal definitiva para comenzar a operar.
             </p>
           </div>
         </div>
@@ -166,36 +175,49 @@ export function ForcePasswordChangeModal() {
             <label className="block text-xs font-bold text-stone-700 mb-1">
               Contraseña temporal recibida
             </label>
-            <input
-              type="password"
-              required
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              placeholder="Ingresá la clave temporal con la que entraste"
-              className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Ingresá la clave temporal (ej: 123456)"
+                className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-stone-400 hover:text-stone-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-400 mt-0.5">Si ingresaste con "123456", podés dejarlo como está.</p>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">
               Nueva contraseña definitiva
             </label>
-            <input
-              type="password"
-              required
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Mínimo 10 caracteres"
-              className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 10 caracteres"
+                className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500 pr-10"
+              />
+            </div>
             <div className="mt-2 space-y-1">
               <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
-                <CheckCircle2 className={`w-3.5 h-3.5 ${newPassword.length >= 10 ? 'text-emerald-500' : 'text-stone-300'}`} />
-                <span>Mínimo 10 caracteres</span>
+                <CheckCircle2 className={`w-3.5 h-3.5 ${newPassword.length >= 10 ? 'text-emerald-500 font-bold' : 'text-stone-300'}`} />
+                <span className={newPassword.length >= 10 ? 'text-emerald-700 font-medium' : ''}>Mínimo 10 caracteres</span>
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
-                <CheckCircle2 className={`w-3.5 h-3.5 ${newPassword.length >= 10 && policyCheck.valid ? 'text-emerald-500' : 'text-stone-300'}`} />
-                <span>No es una clave común ni contiene tu nombre o correo</span>
+                <CheckCircle2 className={`w-3.5 h-3.5 ${newPassword.length >= 10 && policyCheck.valid ? 'text-emerald-500 font-bold' : 'text-stone-300'}`} />
+                <span className={newPassword.length >= 10 && policyCheck.valid ? 'text-emerald-700 font-medium' : ''}>
+                  No es una clave común ni contiene tu nombre o correo
+                </span>
               </div>
             </div>
           </div>
@@ -204,19 +226,27 @@ export function ForcePasswordChangeModal() {
             <label className="block text-xs font-bold text-stone-700 mb-1">
               Confirmar nueva contraseña
             </label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repetí tu nueva contraseña"
-              className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repetí tu nueva contraseña"
+                className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-sm focus:ring-2 focus:ring-lumia-500 pr-10"
+              />
+            </div>
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-[11px] text-rose-600 font-semibold mt-1">Las contraseñas no coinciden.</p>
+            )}
+            {confirmPassword && newPassword === confirmPassword && (
+              <p className="text-[11px] text-emerald-600 font-semibold mt-1">✓ Las contraseñas coinciden.</p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !newPassword || newPassword.length < 10 || newPassword !== confirmPassword}
             className="w-full mt-3 py-3.5 px-4 rounded-2xl text-white font-bold text-sm bg-lumia-500 hover:bg-lumia-600 shadow-lg shadow-lumia-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
