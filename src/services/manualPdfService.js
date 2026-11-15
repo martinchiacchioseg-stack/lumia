@@ -269,8 +269,11 @@ export async function generateManualAdministradorPdf() {
   doc.setFontSize(8.4);
   doc.setTextColor(43, 35, 33);
   doc.text(
-    '• Patita Aliada (IA): Asistente flotante con Gemini Flash para orientación en primeros auxilios, Ley 14.346 y redacción de adopciones. Accesible para todos los roles operativos.\n' +
-    '• Instalación PWA: Se instala como app nativa en Android e iPhone desde el navegador sin ocupar espacio.',
+    '• Sincronización Incremental por Deltas: Conexión con Neon PostgreSQL que solo transfiere cambios recientes, optimizando batería y datos móviles.\n' +
+    '• Autonomía Offline con UUIDv7: Permite registrar animales, atenciones y adopciones sin señal sin riesgo de colisiones entre dispositivos.\n' +
+    '• Patita Aliada (IA): Asistente flotante con Gemini Flash para primeros auxilios, Ley 14.346 y redacción de publicaciones.\n' +
+    '• Escaneo Inteligente (OCR): Cámara integrada con compresión previa en cliente para autocompletar formularios desde libretas sanitarias.\n' +
+    '• Instalación PWA: Se instala como app nativa en Android e iPhone desde el navegador.',
     14, yAfterRoles + 58, { maxWidth: pageWidth - 28, lineHeightFactor: 1.25 }
   );
 

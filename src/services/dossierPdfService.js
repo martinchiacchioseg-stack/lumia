@@ -188,8 +188,9 @@ export async function generateDossierPdf() {
     ['Emisor Autorizado:', 'Superadministración Técnica LUMIA'],
     ['Ámbito y Jurisdicción:', 'República Argentina (Formatos DD/MM/AAAA y huso GMT-3)'],
     ['Marco Legal:', 'Ley Nacional N° 25.326 (Protección Datos Personales) y Ley N° 14.346'],
-    ['Ciberseguridad:', 'Passkeys FIDO2/WebAuthn, Hashes Bcrypt, RLS y Contraseñas CSPRNG (48h)'],
-    ['Inteligencia Artificial:', 'Asistente "Patita Aliada" (Google Gemini Flash en Servidor Seguro)'],
+    ['Ciberseguridad:', 'Passkeys FIDO2/WebAuthn, Hashes Bcrypt, Enmascaramiento Ley 25.326 y Claves CSPRNG'],
+    ['Sincronización Nube:', 'Protocolo Incremental por Deltas con Secuencia Monótona e IDs UUIDv7'],
+    ['Inteligencia Artificial:', 'Asistente "Patita Aliada" y OCR Visual Inteligente con Google Gemini Flash'],
     ['Difusión y Adopciones:', 'Portal Público Libre con WhatsApp directo y Generador de Flyers']
   ];
 
