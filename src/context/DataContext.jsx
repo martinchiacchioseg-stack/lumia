@@ -18,13 +18,20 @@ import {
   syncItemDelete,
   syncBatchUpsert
 } from '../services/dataSyncService';
+import { generateEntityId, sanitizeAdopterRecord } from '../lib/idSecurityUtils';
 
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
   const { currentUser } = useAuth();
+  const userRole = currentUser?.rol || 'Voluntario';
 
-  // Estados principales de datos (iniciados con caché local de localStorage o semilla de respaldo)
+  // Cursor de revisión para sincronización incremental
+  const [lastRevision, setLastRevision] = useState(() => {
+    return parseInt(localStorage.getItem('patita_sync_rev') || '0', 10);
+  });
+
+  // Estados principales de datos con persistencia en caché local
   const [animales, setAnimales] = useState(() => {
     const saved = localStorage.getItem('patita_animales');
     return saved ? JSON.parse(saved) : INITIAL_ANIMALS;
@@ -75,11 +82,9 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : INITIAL_PORTAL_CONFIG;
   });
 
-  // Estado de sincronización en tiempo real con Neon PostgreSQL
-  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'offline' | 'error'
+  const [syncStatus, setSyncStatus] = useState('idle');
   const [lastSyncTime, setLastSyncTime] = useState(null);
 
-  // Referencias mutables para evitar cierres obsoletos en sincronizaciones periódicas
   const stateRef = useRef({
     animales,
     adoptantes,
@@ -90,7 +95,8 @@ export function DataProvider({ children }) {
     auditoria,
     noticias,
     mensajesSistema,
-    configPortal
+    configPortal,
+    lastRevision
   });
 
   useEffect(() => {
@@ -104,11 +110,12 @@ export function DataProvider({ children }) {
       auditoria,
       noticias,
       mensajesSistema,
-      configPortal
+      configPortal,
+      lastRevision
     };
-  }, [animales, adoptantes, adopciones, seguimientos, eventosSalud, reportesCalle, auditoria, noticias, mensajesSistema, configPortal]);
+  }, [animales, adoptantes, adopciones, seguimientos, eventosSalud, reportesCalle, auditoria, noticias, mensajesSistema, configPortal, lastRevision]);
 
-  // Persistencia local en localStorage (Caché Offline inmediata)
+  // Persistencia local en localStorage (Caché Offline)
   useEffect(() => { localStorage.setItem('patita_animales', JSON.stringify(animales)); }, [animales]);
   useEffect(() => { localStorage.setItem('patita_adoptantes', JSON.stringify(adoptantes)); }, [adoptantes]);
   useEffect(() => { localStorage.setItem('patita_adopciones', JSON.stringify(adopciones)); }, [adopciones]);
@@ -119,13 +126,12 @@ export function DataProvider({ children }) {
   useEffect(() => { localStorage.setItem('patita_noticias', JSON.stringify(noticias)); }, [noticias]);
   useEffect(() => { localStorage.setItem('patita_mensajes_sistema', JSON.stringify(mensajesSistema)); }, [mensajesSistema]);
   useEffect(() => { localStorage.setItem('patita_config_portal', JSON.stringify(configPortal)); }, [configPortal]);
+  useEffect(() => { localStorage.setItem('patita_sync_rev', String(lastRevision)); }, [lastRevision]);
 
   const isSyncingRef = useRef(false);
 
   /**
-   * Sincroniza bidireccionalmente con Neon PostgreSQL
-   * - Trae datos agregados por otros dispositivos (celulares / PC)
-   * - Si este dispositivo tiene registros creados que aún no están en la nube, los sube automáticamente
+   * Sincronización Incremental por Deltas
    */
   const syncWithServer = useCallback(async (isManual = false) => {
     if (isSyncingRef.current) return;
@@ -133,7 +139,8 @@ export function DataProvider({ children }) {
     setSyncStatus('syncing');
 
     try {
-      const res = await fetchServerData();
+      const currentRev = stateRef.current.lastRevision;
+      const res = await fetchServerData(currentRev);
 
       if (!res.success) {
         setSyncStatus(res.offline ? 'offline' : 'error');
@@ -142,152 +149,79 @@ export function DataProvider({ children }) {
       }
 
       const serverCols = res.collections || {};
-      const totalServerRecords = res.totalRecords || 0;
-      const current = stateRef.current;
+      const deletedList = res.deleted || [];
+      const newRev = res.currentRevision || currentRev;
 
-      // CASO 1: Si la base de datos en Neon está recién inicializada y vacía:
-      // Subimos todos nuestros datos locales (incluyendo cualquier animal o adopción que ya se haya creado)
-      if (totalServerRecords === 0) {
-        const batchToPush = [
-          ...current.animales.map(item => ({ collection: 'animales', item })),
-          ...current.adoptantes.map(item => ({ collection: 'adoptantes', item })),
-          ...current.adopciones.map(item => ({ collection: 'adopciones', item })),
-          ...current.seguimientos.map(item => ({ collection: 'seguimientos', item })),
-          ...current.eventosSalud.map(item => ({ collection: 'eventos_salud', item })),
-          ...current.reportesCalle.map(item => ({ collection: 'reportes_calle', item })),
-          ...current.mensajesSistema.map(item => ({ collection: 'mensajes_sistema', item })),
-          ...current.noticias.map(item => ({ collection: 'noticias', item })),
-          ...(current.configPortal ? [{ collection: 'config_portal', item: { id: 'singleton', ...current.configPortal } }] : [])
-        ];
-
-        if (batchToPush.length > 0) {
-          await syncBatchUpsert(batchToPush);
-        }
-
-        setSyncStatus('synced');
-        setLastSyncTime(new Date());
-        isSyncingRef.current = false;
-        return;
+      // Aplicar eliminaciones lógicas
+      if (deletedList.length > 0) {
+        const deletedIds = new Set(deletedList.map(d => d.id));
+        setAnimales(prev => prev.filter(a => !deletedIds.has(a.id)));
+        setAdoptantes(prev => prev.filter(a => !deletedIds.has(a.id)));
+        setAdopciones(prev => prev.filter(a => !deletedIds.has(a.id)));
+        setSeguimientos(prev => prev.filter(s => !deletedIds.has(s.id)));
+        setEventosSalud(prev => prev.filter(e => !deletedIds.has(e.id)));
+        setReportesCalle(prev => prev.filter(r => !deletedIds.has(r.id)));
+        setNoticias(prev => prev.filter(n => !deletedIds.has(n.id)));
+        setMensajesSistema(prev => prev.filter(m => !deletedIds.has(m.id)));
       }
 
-      // CASO 2: La base de datos en Neon ya tiene datos:
-      // Realizamos un merge inteligente para cada colección:
-      // a) Identificamos items que este dispositivo creó localmente y no están en el servidor -> se suben
-      // b) Actualizamos el estado con la lista unificada del servidor
-      const pendingUploads = [];
+      // Fusión de mutaciones incrementales
+      const mergeCollection = (currentList, deltaList) => {
+        if (!deltaList || deltaList.length === 0) return currentList;
+        const deltaMap = new Map(deltaList.map(item => [item.id, item]));
+        const updated = currentList.map(item => deltaMap.has(item.id) ? { ...item, ...deltaMap.get(item.id) } : item);
+        const existingIds = new Set(currentList.map(item => item.id));
+        const brandNew = deltaList.filter(item => !existingIds.has(item.id));
+        return [...updated, ...brandNew];
+      };
 
-      // 1. Animales
-      const serverAnimales = serverCols.animales || [];
-      const serverAnimalIds = new Set(serverAnimales.map(a => a.id));
-      const localOnlyAnimals = current.animales.filter(a => !serverAnimalIds.has(a.id));
-      if (localOnlyAnimals.length > 0) {
-        localOnlyAnimals.forEach(item => pendingUploads.push({ collection: 'animales', item }));
+      if (res.isDelta) {
+        if (serverCols.animales?.length) setAnimales(prev => mergeCollection(prev, serverCols.animales));
+        if (serverCols.adoptantes?.length) setAdoptantes(prev => mergeCollection(prev, serverCols.adoptantes));
+        if (serverCols.adopciones?.length) setAdopciones(prev => mergeCollection(prev, serverCols.adopciones));
+        if (serverCols.seguimientos?.length) setSeguimientos(prev => mergeCollection(prev, serverCols.seguimientos));
+        if (serverCols.eventos_salud?.length) setEventosSalud(prev => mergeCollection(prev, serverCols.eventos_salud));
+        if (serverCols.reportes_calle?.length) setReportesCalle(prev => mergeCollection(prev, serverCols.reportes_calle));
+        if (serverCols.mensajes_sistema?.length) setMensajesSistema(prev => mergeCollection(prev, serverCols.mensajes_sistema));
+        if (serverCols.noticias?.length) setNoticias(prev => mergeCollection(prev, serverCols.noticias));
+      } else {
+        // Carga completa inicial
+        if (serverCols.animales) setAnimales(serverCols.animales);
+        if (serverCols.adoptantes) setAdoptantes(serverCols.adoptantes);
+        if (serverCols.adopciones) setAdopciones(serverCols.adopciones);
+        if (serverCols.seguimientos) setSeguimientos(serverCols.seguimientos);
+        if (serverCols.eventos_salud) setEventosSalud(serverCols.eventos_salud);
+        if (serverCols.reportes_calle) setReportesCalle(serverCols.reportes_calle);
+        if (serverCols.mensajes_sistema) setMensajesSistema(serverCols.mensajes_sistema);
+        if (serverCols.noticias) setNoticias(serverCols.noticias);
       }
-      setAnimales([...serverAnimales, ...localOnlyAnimals]);
 
-      // 2. Adoptantes
-      const serverAdoptantes = serverCols.adoptantes || [];
-      const serverAdopterIds = new Set(serverAdoptantes.map(a => a.id));
-      const localOnlyAdopters = current.adoptantes.filter(a => !serverAdopterIds.has(a.id));
-      if (localOnlyAdopters.length > 0) {
-        localOnlyAdopters.forEach(item => pendingUploads.push({ collection: 'adoptantes', item }));
-      }
-      setAdoptantes([...serverAdoptantes, ...localOnlyAdopters]);
-
-      // 3. Adopciones
-      const serverAdopciones = serverCols.adopciones || [];
-      const serverAdoptionIds = new Set(serverAdopciones.map(a => a.id));
-      const localOnlyAdoptions = current.adopciones.filter(a => !serverAdoptionIds.has(a.id));
-      if (localOnlyAdoptions.length > 0) {
-        localOnlyAdoptions.forEach(item => pendingUploads.push({ collection: 'adopciones', item }));
-      }
-      setAdopciones([...serverAdopciones, ...localOnlyAdoptions]);
-
-      // 4. Seguimientos
-      const serverSeguimientos = serverCols.seguimientos || [];
-      const serverSegIds = new Set(serverSeguimientos.map(s => s.id));
-      const localOnlySegs = current.seguimientos.filter(s => !serverSegIds.has(s.id));
-      if (localOnlySegs.length > 0) {
-        localOnlySegs.forEach(item => pendingUploads.push({ collection: 'seguimientos', item }));
-      }
-      setSeguimientos([...serverSeguimientos, ...localOnlySegs]);
-
-      // 5. Eventos de Salud
-      const serverSalud = serverCols.eventos_salud || [];
-      const serverSaludIds = new Set(serverSalud.map(e => e.id));
-      const localOnlySalud = current.eventosSalud.filter(e => !serverSaludIds.has(e.id));
-      if (localOnlySalud.length > 0) {
-        localOnlySalud.forEach(item => pendingUploads.push({ collection: 'eventos_salud', item }));
-      }
-      setEventosSalud([...serverSalud, ...localOnlySalud]);
-
-      // 6. Reportes de Calle
-      const serverReportes = serverCols.reportes_calle || [];
-      const serverReportIds = new Set(serverReportes.map(r => r.id));
-      const localOnlyReports = current.reportesCalle.filter(r => !serverReportIds.has(r.id));
-      if (localOnlyReports.length > 0) {
-        localOnlyReports.forEach(item => pendingUploads.push({ collection: 'reportes_calle', item }));
-      }
-      setReportesCalle([...serverReportes, ...localOnlyReports]);
-
-      // 7. Mensajes del Sistema
-      const serverMensajes = serverCols.mensajes_sistema || [];
-      const serverMsgIds = new Set(serverMensajes.map(m => m.id));
-      const localOnlyMsgs = current.mensajesSistema.filter(m => !serverMsgIds.has(m.id));
-      if (localOnlyMsgs.length > 0) {
-        localOnlyMsgs.forEach(item => pendingUploads.push({ collection: 'mensajes_sistema', item }));
-      }
-      // Garantizar que el mensaje oficial de avances de hoy esté siempre presente
-      const combinedMsgs = [...serverMensajes, ...localOnlyMsgs];
-      setMensajesSistema(combinedMsgs);
-
-      // 8. Noticias
-      const serverNoticias = serverCols.noticias || [];
-      const serverNewsIds = new Set(serverNoticias.map(n => n.id));
-      const localOnlyNews = current.noticias.filter(n => !serverNewsIds.has(n.id));
-      if (localOnlyNews.length > 0) {
-        localOnlyNews.forEach(item => pendingUploads.push({ collection: 'noticias', item }));
-      }
-      setNoticias([...serverNoticias, ...localOnlyNews]);
-
-      // 9. Configuración del Portal
       if (serverCols.config_portal) {
         setConfigPortal(serverCols.config_portal);
       }
 
-      // Si había registros locales huérfanos, los subimos a Neon en segundo plano
-      if (pendingUploads.length > 0) {
-        await syncBatchUpsert(pendingUploads);
-      }
-
+      setLastRevision(newRev);
       setSyncStatus('synced');
       setLastSyncTime(new Date());
     } catch (err) {
-      console.error('[DataContext Sync Error]:', err);
+      console.error('[DataContext Delta Sync Error]:', err);
       setSyncStatus('error');
     } finally {
       isSyncingRef.current = false;
     }
   }, []);
 
-  // Sincronización en segundo plano: al montar, periódica cada 20 segundos y al recuperar el foco/visibilidad
+  // Polling incremental cada 25 segundos y en visibilidad
   useEffect(() => {
     syncWithServer(false);
-
-    const interval = setInterval(() => {
-      syncWithServer(false);
-    }, 20000);
-
+    const interval = setInterval(() => syncWithServer(false), 25000);
     const onFocus = () => syncWithServer(false);
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncWithServer(false);
-      }
+      if (document.visibilityState === 'visible') syncWithServer(false);
     };
 
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
-
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
@@ -295,12 +229,9 @@ export function DataProvider({ children }) {
     };
   }, [syncWithServer]);
 
-  /**
-   * Registrar evento en la bitácora de auditoría
-   */
   const logAudit = (accion, tabla_afectada, registro_nombre) => {
     const newLog = {
-      id: `aud-${Date.now()}`,
+      id: generateEntityId('aud'),
       usuario_nombre: currentUser?.nombre || 'Usuario del sistema',
       accion,
       tabla_afectada,
@@ -311,9 +242,6 @@ export function DataProvider({ children }) {
     syncItemUpsert('auditoria', newLog);
   };
 
-  /**
-   * Generar código interno único (DOG-003, CAT-002, etc.)
-   */
   const generateAnimalCode = (especie) => {
     const prefix = especie === 'gato' ? 'CAT' : especie === 'perro' ? 'DOG' : 'OTH';
     const existing = animales.filter(a => a.codigo_interno && a.codigo_interno.startsWith(prefix));
@@ -326,7 +254,7 @@ export function DataProvider({ children }) {
     const codigo_interno = data.codigo_interno || generateAnimalCode(data.especie || 'perro');
     const newAnimal = {
       ...data,
-      id: `anim-${Date.now()}`,
+      id: generateEntityId('anim'),
       codigo_interno,
       archivado: false,
       created_at: new Date().toISOString(),
@@ -364,11 +292,11 @@ export function DataProvider({ children }) {
     logAudit('Archivado de animal', 'animales', current?.nombre_actual || id);
   };
 
-  // =================== ADOPTANTES ===================
+  // =================== ADOPTANTES (Ley 25.326) ===================
   const addAdoptante = (data) => {
     const newAdopter = {
       ...data,
-      id: `adop-${Date.now()}`,
+      id: generateEntityId('adop'),
       archivado: false,
       created_at: new Date().toISOString()
     };
@@ -406,18 +334,16 @@ export function DataProvider({ children }) {
 
   // =================== ADOPCIONES Y CALENDARIO AUTOMÁTICO ===================
   const addAdopcion = (data) => {
+    const adoptionId = generateEntityId('adopcion');
     const newAdoption = {
       ...data,
-      id: `adopcion-${Date.now()}`,
+      id: adoptionId,
       estado_adopcion: 'activo en seguimiento',
       created_at: new Date().toISOString()
     };
 
-    // Actualizar estado del animal a adoptado
     updateAnimal(data.animal_id, { estado_caso: 'adoptado' });
 
-    // Generar calendario de seguimientos automáticamente:
-    // 48-72 hs, 15 días, 1 mes, 3 meses, 6 meses, 1 año
     const fEntrega = new Date(data.fecha_entrega || new Date());
     const addDays = (d, days) => {
       const copy = new Date(d);
@@ -427,52 +353,52 @@ export function DataProvider({ children }) {
 
     const scheduledFollowups = [
       {
-        id: `seg-${Date.now()}-1`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 3),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
-        observaciones: 'Control inicial a las 48-72 hs: chequeo de adaptación inmediata, apetito y descanso.',
+        observaciones: 'Control inicial 48-72 hs: chequeo de adaptación, apetito y descanso.',
         proxima_fecha_seguimiento: addDays(fEntrega, 15),
         completado: false,
         created_at: new Date().toISOString()
       },
       {
-        id: `seg-${Date.now()}-2`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 15),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
-        observaciones: 'Control a los 15 días: finalización de período crítico de adaptación y paseos con correa.',
+        observaciones: 'Control 15 días: finalización de período crítico de adaptación y correa.',
         proxima_fecha_seguimiento: addDays(fEntrega, 30),
         completado: false,
         created_at: new Date().toISOString()
       },
       {
-        id: `seg-${Date.now()}-3`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 30),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
-        observaciones: 'Control al 1er mes: rutina afianzada y verificación de compromiso de castración si aplica.',
+        observaciones: 'Control 1er mes: rutina afianzada y compromiso de castración si aplica.',
         proxima_fecha_seguimiento: addDays(fEntrega, 90),
         completado: false,
         created_at: new Date().toISOString()
       },
       {
-        id: `seg-${Date.now()}-4`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 90),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
-        observaciones: 'Control a los 3 meses: control general y refuerzo de vacunas.',
+        observaciones: 'Control 3 meses: control general y refuerzo de vacunas.',
         proxima_fecha_seguimiento: addDays(fEntrega, 180),
         completado: false,
         created_at: new Date().toISOString()
       },
       {
-        id: `seg-${Date.now()}-5`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 180),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
@@ -482,12 +408,12 @@ export function DataProvider({ children }) {
         created_at: new Date().toISOString()
       },
       {
-        id: `seg-${Date.now()}-6`,
-        adopcion_id: newAdoption.id,
+        id: generateEntityId('seg'),
+        adopcion_id: adoptionId,
         fecha_contacto: addDays(fEntrega, 365),
         tipo_contacto: 'WhatsApp',
         estado_general: 'normal',
-        observaciones: 'Control al 1er año de adopción: consolidación total del vínculo.',
+        observaciones: 'Control 1er año: consolidación total del vínculo.',
         proxima_fecha_seguimiento: null,
         completado: false,
         created_at: new Date().toISOString()
@@ -501,10 +427,8 @@ export function DataProvider({ children }) {
     const adop = adoptantes.find(ad => ad.id === data.adoptante_id);
     logAudit('Nueva adopción concretada', 'adopciones', `${anim?.nombre_actual || ''} adoptado/a por ${adop?.nombre_apellido || ''}`);
 
-    // Sincronizar en Neon PostgreSQL
     syncItemUpsert('adopciones', newAdoption);
     syncBatchUpsert(scheduledFollowups.map(item => ({ collection: 'seguimientos', item })));
-
     return newAdoption;
   };
 
@@ -524,7 +448,7 @@ export function DataProvider({ children }) {
   const addSeguimiento = (data) => {
     const newSeg = {
       ...data,
-      id: `seg-${Date.now()}`,
+      id: generateEntityId('seg'),
       created_at: new Date().toISOString(),
       completado: true
     };
@@ -549,7 +473,7 @@ export function DataProvider({ children }) {
   const addEventoSalud = (data) => {
     const newEvent = {
       ...data,
-      id: `salud-${Date.now()}`,
+      id: generateEntityId('salud'),
       created_at: new Date().toISOString()
     };
     setEventosSalud(prev => [newEvent, ...prev]);
@@ -579,7 +503,7 @@ export function DataProvider({ children }) {
   const addReporteCalle = (data) => {
     const newReport = {
       ...data,
-      id: `rep-${Date.now()}`,
+      id: generateEntityId('rep'),
       estado_reporte: 'nuevo',
       created_at: new Date().toISOString()
     };
@@ -601,7 +525,6 @@ export function DataProvider({ children }) {
     logAudit('Actualización de reporte de calle', 'reportes_calle', `Reporte #${id}`);
   };
 
-  // Convertir reporte de calle directamente a ficha de animal rescatado
   const convertReportToAnimal = (reporteId) => {
     const reporte = reportesCalle.find(r => r.id === reporteId);
     if (!reporte) return null;
@@ -627,7 +550,6 @@ export function DataProvider({ children }) {
       rescatista_a_cargo: currentUser?.id
     });
 
-    // Actualizar reporte con estado resuelto y vínculo
     updateReporteCalle(reporteId, {
       estado_reporte: 'resuelto',
       animal_id: newAnimal.id,
@@ -638,11 +560,10 @@ export function DataProvider({ children }) {
     return newAnimal;
   };
 
-  // Carga masiva (Importación)
   const bulkImportAnimals = (importedList) => {
     const prepared = importedList.map((item, idx) => ({
       ...item,
-      id: `anim-imp-${Date.now()}-${idx}`,
+      id: generateEntityId('anim_imp'),
       codigo_interno: item.codigo_interno || generateAnimalCode(item.especie || 'perro'),
       archivado: false,
       created_at: new Date().toISOString()
@@ -656,7 +577,7 @@ export function DataProvider({ children }) {
   const bulkImportAdopters = (importedList) => {
     const prepared = importedList.map((item, idx) => ({
       ...item,
-      id: `adop-imp-${Date.now()}-${idx}`,
+      id: generateEntityId('adop_imp'),
       archivado: false,
       created_at: new Date().toISOString()
     }));
@@ -666,12 +587,9 @@ export function DataProvider({ children }) {
     return prepared.length;
   };
 
-  /**
-   * Gestión de Noticias y Publicaciones del Administrador
-   */
   const addNoticia = (noticiaData) => {
     const newNoticia = {
-      id: `noticia-${Date.now()}`,
+      id: generateEntityId('noticia'),
       ...noticiaData,
       fecha: new Date().toLocaleDateString('es-AR'),
       autor: currentUser?.nombre || 'Administración',
@@ -716,9 +634,6 @@ export function DataProvider({ children }) {
     }));
   };
 
-  /**
-   * Configuración del Portal Público (Superadministrador)
-   */
   const updateConfigPortal = (newConfig) => {
     setConfigPortal(prev => {
       const updated = { ...prev, ...newConfig, updated_at: new Date().toISOString() };
@@ -728,12 +643,9 @@ export function DataProvider({ children }) {
     });
   };
 
-  /**
-   * Gestión de Mensajes Oficiales del Sistema (Superadmin a Administrador)
-   */
   const addMensajeSistema = (msgData) => {
     const newMsg = {
-      id: `msg-${Date.now()}`,
+      id: generateEntityId('msg'),
       remitente_nombre: currentUser?.nombre || 'Superadministrador Técnico',
       remitente_rol: currentUser?.rol || 'Superadministrador',
       remitente_email: currentUser?.email || 'martinchiacchio.seg@gmail.com',
@@ -786,6 +698,7 @@ export function DataProvider({ children }) {
         configPortal,
         syncStatus,
         lastSyncTime,
+        lastRevision,
         syncWithServer,
         addAnimal,
         updateAnimal,

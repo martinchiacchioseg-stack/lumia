@@ -1,10 +1,11 @@
 /**
- * Servicio de sincronización en tiempo real con Neon PostgreSQL (Patita Aliada / LUMIA)
+ * Servicio de sincronización incremental por deltas con Neon PostgreSQL
  */
 
-export async function fetchServerData() {
+export async function fetchServerData(sinceRevision = 0) {
   try {
-    const res = await fetch('/api/data/sync', {
+    const url = sinceRevision > 0 ? `/api/data/sync?since=${sinceRevision}` : '/api/data/sync';
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
